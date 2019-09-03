@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.urt.UrtOperationInfoMapper">
+
+    <select id="getProcessTreeData" parameterType="String" resultType="ProcessInfoFlatData" fetchSize="10000" >
+         SELECT /*+ leading(ps1) use_hash(v1) */
+               ps1.sequence                          AS psystem_id_seq
+             , ps1.system_id                         AS psystem_id
+             , ps1.system_Name                       AS psystem_name
+             , COALESCE(V1.grp_ctg_seq1  , 99)       AS grp_ctg_seq1
+             , COALESCE(V1.grp_ctg_cd1   , 'NODATA') AS grp_ctg_cd1
+             , COALESCE(V1.grp_ctg_name1 , 'NODATA') AS grp_ctg_name1
+             , COALESCE(V1.grp_ctg_seq2  , 99)       AS grp_ctg_seq2
+             , COALESCE(V1.grp_ctg_cd2   , 'NODATA') AS grp_ctg_cd2
+             , COALESCE(V1.grp_ctg_name2 , 'NODATA') AS grp_ctg_name2
+             , COALESCE(V1.group_id_seq  , 99)       AS group_id_seq
+             , COALESCE(V1.group_id      , 'NODATA') AS group_id
+             , COALESCE(V1.group_name    , 'NODATA') AS group_name
+             , COALESCE(V1.system_id_seq , 0)        AS system_id_seq
+             , COALESCE(V1.system_id     , 'NODATA') AS system_id
+             , COALESCE(V1.system_name   , 'NODATA') AS system_name
+             , COALESCE(V1.bp_group_seq  , 0)        AS bp_group_seq
+             , COALESCE(V1.bp_group      , 'NODATA') AS bp_group
+             , COALESCE(V1.bp_id         , 'NODATA') AS bp_id
+             , COALESCE(V1.bp_name       , 'NODATA') AS bp_name
+             , COALESCE(V1.bm_id_seq     , 0)        AS bm_id_seq
+             , COALESCE(V1.bm_id         , 'NODATA') AS bm_id
+             , COALESCE(V1.bm_name       , 'NODATA') AS bm_name
+             , COALESCE(V1.running_thread, 0)        AS running_thread
+             , COALESCE(ogid2.itm_seq    , 99)       AS status_priority
+             , COALESCE(V1.bp_status     , 'PS06')   AS status
+        FROM   tb_prc_system ps1
+               LEFT OUTER JOIN (
+                   SELECT /*+ no_merge leading(gid1 gid2 gid3 pg hgbp ps2 pbpm pbp) 
+                              use_nl(gid2 gid3 pg hgbp)  use_hash(pbm) use_hash(pbmm) use_hash(pbsm) use_hash(pbsp) use_hash(hgs) use_hash(ogid) use_hash(pbp)
+                              swap_join_inputs(pbmm) swap_join_inputs(pbsm) swap_join_inputs(pbsp) swap_join_inputs(hgs) swap_join_inputs(ogid) swap_join_inputs(pbp) */
+                              gid3.itm_seq                                         AS grp_ctg_seq1
+                            , gid3.itm_cd                                          AS grp_ctg_cd1
+                            , gid3.itm_name                                        AS grp_ctg_name1
+                            , gid2.itm_seq                                         AS grp_ctg_seq2
+                            , gid2.itm_cd                                          AS grp_ctg_cd2
+                            , gid2.itm_name                                        AS grp_ctg_name2
+                            , gid1.itm_seq                                         AS group_id_seq
+                            , pg.group_id                                          AS group_id
+                            , pg.group_name                                        AS group_name
+                            , ps2.sequence                                         AS system_id_seq
+                            , ps2.system_id                                        AS system_id
+                            , ps2.system_name                                      AS system_name
+                            , COALESCE(hgs.op_system_id, hgbp.primary_system_id)   AS psystem_id
+                            , COALESCE(ogid.itm_seq, 0)                            AS bp_group_seq
+                            , COALESCE(ogid.rel_itm_cd, pbp.bp_name)               AS bp_group
+                            , pbpm.bp_id                                           AS bp_id
+                            , REPLACE(pbpm.parameter, <![CDATA[ '<lsid> <group_id> <bpid> <inst_id>' ]]>, pbp.bp_name) AS bp_name
+                            , (CASE WHEN pbpm.use_yn = 'N' THEN 'HDDN'
+                                    ELSE NVL(pbsp.status, 'PS99')
+                               END)                                                AS bp_status
+                            , DENSE_RANK()OVER(ORDER BY pbm.bm_id)                 AS bm_id_seq
+                            , pbmm.bm_id                                           AS bm_id
+                            , pbm.bm_name                                          AS bm_name
+                            , NVL(pbsm.running_thread, 0)                          AS running_thread
+                       FROM   tb_prc_bmid_mapping      pbmm
+                              LEFT OUTER JOIN tb_prc_bm_status pbsm
+                              ON ( pbmm.system_id = pbsm.system_id
+                               AND pbmm.group_id  = pbsm.group_id
+                               AND pbmm.bp_id     = pbsm.bp_id
+                               AND pbmm.bm_id     = pbsm.bm_id
+                              )
+                            , tb_prc_bmid              pbm
+                            , tb_prc_bpid_mapping      pbpm
+                              LEFT OUTER JOIN tb_prc_bm_status pbsp
+                              ON ( pbpm.system_id = pbsp.system_id
+                               AND pbpm.group_id  = pbsp.group_id
+                               AND pbpm.bp_id     = pbsp.bp_id
+                               AND pbsp.bm_id     = '000000'
+                              )
+                            , tb_prc_bpid              pbp
+                              LEFT OUTER JOIN tb_gui_itm_def ogid
+                              ON ( ogid.itm_grp_cd  = 'BP_GROUP'
+                               AND ogid.itm_cd      = pbp.bp_name
+                              )
+                            , tb_hav_grp_backup_policy hgbp
+                              LEFT OUTER JOIN tb_hav_grp_status hgs
+                              ON ( hgbp.system_id = hgs.system_id
+                               AND hgbp.group_id  = hgs.group_id
+                              )
+                            , tb_prc_system            ps2
+                            , tb_prc_group             pg
+                            , tb_gui_itm_def           gid1
+                            , tb_gui_itm_def           gid2
+                            , tb_gui_itm_def           gid3
+                       WHERE  pbm.bm_id              = pbmm.bm_id
+                       AND    pbpm.system_id         = pbmm.system_id
+                       AND    pbpm.group_id          = pbmm.group_id
+                       AND    pbpm.bp_id             = pbmm.bp_id
+                       AND    pbp.bp_id              = pbpm.bp_id
+                       AND    hgbp.primary_system_id = pbpm.system_id
+                       AND    hgbp.group_id          = pbpm.group_id
+                       AND    ps2.system_id          = hgbp.primary_system_id
+                       AND    pg.group_id            = hgbp.group_id
+                       AND    gid1.itm_cd            = pg.group_id
+                       AND    gid1.itm_grp_cd        = 'GROUP_ID'
+                       AND    gid2.itm_grp_cd        = gid1.rel_itm_grp_cd
+                       AND    gid2.itm_cd            = gid1.rel_itm_cd
+                       AND    gid3.itm_grp_cd        = gid2.rel_itm_grp_cd
+                       AND    gid3.itm_cd            = gid2.rel_itm_cd
+                       AND    hgbp.system_id         = pbmm.system_id
+                       AND    hgbp.group_id          = pbmm.group_id
+               ) V1
+               ON ( ps1.system_id = V1.psystem_id )
+               LEFT OUTER JOIN tb_gui_itm_def ogid2
+               ON ( ogid2.itm_grp_cd = 'BP_STATUS'
+                AND ogid2.itm_cd     = V1.bp_status
+                  )
+    </select>
+
+    <select id="getServetList" parameterType="String" resultType="ProcessServerList">
+        SELECT system_id
+             , system_group
+             , system_name
+        FROM   tb_prc_system
+        ORDER BY system_id
+    </select>
+
+    <select id="getGroupInfo" parameterType="String" resultType="QueueStatusInfo">
+        SELECT pg.group_id   AS itm_cd
+             , pg.group_name AS itm_name
+        FROM   tb_prc_group pg
+            <choose>
+                <when test = "group_id != null and group_id != ''">
+                    WHERE  group_id = #{group_id}
+                </when>
+                <when test = "grp_ctg1 != null and grp_ctg1 != ''">
+                    <choose>
+                        <when test = "grp_ctg2 == 'NO_CTG'">
+                            WHERE  NOT EXISTS (
+                        </when>
+                        <otherwise>
+                            WHERE  EXISTS (
+                        </otherwise>
+                    </choose>
+                    SELECT 1
+                    FROM   tb_gui_itm_def gid1
+                         , tb_gui_itm_def gid2
+                         , tb_gui_itm_def gid3
+                    WHERE  gid1.itm_grp_cd = 'GROUP_ID'
+                    AND    gid1.itm_cd     = pg.group_id
+                    AND    gid2.itm_grp_cd = gid1.rel_itm_grp_cd
+                    AND    gid2.itm_cd     = gid1.rel_itm_cd
+                    AND    gid3.itm_grp_cd = gid2.rel_itm_grp_cd
+                    AND    gid3.itm_cd     = gid2.rel_itm_cd
+                    <if test = "grp_ctg2 != null and grp_ctg2 != ''">
+                    AND    gid2.itm_cd     = #{grp_ctg2}
+                    </if>
+                    AND    gid3.itm_cd     = #{grp_ctg1}
+                )
+                </when>
+            </choose>
+        ORDER BY group_id
+    </select>
+
+    <select id="getBpInfo" parameterType="String" resultType="QueueStatusInfo">
+        SELECT pb.bp_id   AS itm_cd
+             , pb.bp_name AS itm_name
+        FROM   tb_prc_bpid pb
+             , tb_prc_bpid_mapping pbm
+             , tb_hav_grp_status hgs
+        WHERE  hgs.op_system_id = #{op_system_id}
+        AND    hgs.group_id     = #{group_id}
+        AND    pbm.system_id    = hgs.system_id
+        AND    pbm.group_id     = hgs.group_id
+        AND    pb.bp_id         = pbm.bp_id
+        ORDER BY pb.bp_id
+    </select>
+
+</mapper>

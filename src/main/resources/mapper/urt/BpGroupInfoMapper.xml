@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.urt.BpGroupInfoMapper">
+
+    <!-- BP GROUP 정보 조회 -->
+    <select id="selectBpGroupInfoList" resultType="BpGroupInfo">
+        SELECT   itm_cd AS group_id
+        FROM     tb_gui_itm_def
+        WHERE    itm_grp_cd = 'UI_BP_GROUP'
+        ORDER BY itm_seq
+    </select>
+
+    <!-- BP GROUP 정보 조회(단건) -->
+    <select id="selectBpGroupInfo" resultType="BpGroupInfo">
+        SELECT itm_cd    AS group_id
+             , itm_name  AS group_name
+             , itm_seq   AS sequence
+             , rel_itm_cd
+             , itm_name
+        FROM   tb_gui_itm_def
+        WHERE  itm_grp_cd = 'UI_BP_GROUP'
+        AND    itm_cd     = #{bpGroupId}
+        LIMIT 1
+    </select>
+
+    <!-- BP GROUP 정보 등록 -->
+    <insert id="insertBpGroupInfo" parameterType="BpGroupInfo">
+        INSERT INTO tb_gui_itm_def
+        ( itm_grp_cd
+        , itm_cd
+        , itm_name
+        , itm_seq
+        , rel_itm_cd
+        )
+        VALUES
+        ( 'UI_BP_GROUP'
+        , #{bpGroupInfo.group_id}
+        , #{bpGroupInfo.group_name}
+        , #{bpGroupInfo.sequence}
+        , #{bpGroupInfo.reference}
+        )
+    </insert>
+
+    <!-- BP GROUP 정보 수정 -->
+    <update id="updateBpGroupInfo" parameterType="BpGroupInfo">
+        UPDATE tb_gui_itm_def
+        SET    itm_name   = #{bpGroupInfo.reference}
+             , itm_seq    = #{bpGroupInfo.sequence}
+        WHERE  itm_grp_cd = 'UI_BP_GROUP'
+        AND    itm_cd     = #{bpGroupInfo.group_id}
+    </update>
+
+    <!-- BP GROUP 정보 삭제 -->
+    <delete id="deleteBpGroupInfo" parameterType="BpGroupInfo">
+        DELETE FROM tb_gui_itm_def
+        WHERE  itm_grp_cd = 'UI_BP_GROUP'
+        AND    itm_cd     = #{bpGroupInfo.group_id}
+    </delete>
+
+</mapper>

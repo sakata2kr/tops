@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.fwk.EventMapper">
+
+    <!-- 이벤트종류 -->
+    <select id="selectEventType" resultType="EventType">
+        SELECT   event_type AS eventtype
+               , description
+        FROM     tb_hav_event
+        ORDER BY event_type
+    </select>
+
+    <!-- 이벤트목록 조회 시 전체 건수 조회 -->
+    <select id="selectUserEventLogCount" parameterType="EventParam" resultType="Integer">
+        SELECT CEIL(COUNT(1)/100) AS total_page
+        FROM   tb_hav_event_hist     heh
+        WHERE  heh.event_timestamp BETWEEN #{eventParam.eventStartTimeStamp} AND #{eventParam.eventEndTimeStamp}
+        <if test="eventParam.eventType != null">
+            AND heh.event_type IN (
+                <foreach collection="eventParam.eventType" item="b" separator=",">#{b}</foreach>
+            )
+        </if>
+        <if test="eventParam.eventSystems != null">
+            AND heh.op_system_id IN (
+                <foreach collection="eventParam.eventSystems" item="a" separator=",">#{a}</foreach>
+            )
+        </if>
+    </select>
+
+    <!-- 이벤트목록 조회 -->
+    <select id="selectUserEventLog" parameterType="EventParam" resultType="EventMessage">
+        SELECT heh.event_id
+             , heh.event_type
+             , he.description AS event_name
+             , heh.system_id
+             , heh.op_system_id
+             , heh.group_id
+             , heh.bp_id
+             , heh.bm_id
+             , DATE_FORMAT(STR_TO_DATE(heh.event_timestamp, '%Y%m%d%H%i%s'), '%Y/%m/%d %H:%i:%s') AS event_time
+             , LTRIM(RTRIM(heh.message)) AS message
+        FROM   tb_hav_event_hist     heh
+               LEFT OUTER JOIN tb_hav_event he
+               ON ( he.event_type = heh.event_type )
+        WHERE  heh.event_timestamp BETWEEN #{eventParam.eventStartTimeStamp} AND #{eventParam.eventEndTimeStamp}
+        <if test="eventParam.eventType != null">
+            AND heh.event_type IN (
+                <foreach collection="eventParam.eventType" item="b" separator=",">#{b}</foreach>
+            )
+        </if>
+        <if test="eventParam.eventSystems != null">
+            AND heh.op_system_id IN (
+                <foreach collection="eventParam.eventSystems" item="a" separator=",">#{a}</foreach>
+            )
+        </if>
+        ORDER BY event_timestamp desc
+               , event_id desc
+        LIMIT 100
+    </select>
+
+    <!-- 이벤트 알람 대시보드용 -->
+    <select id="selectEventMessage" parameterType="String" resultType="EventMessage">
+        SELECT   heh.event_id                              AS event_id
+               , heh.event_type                            AS event_type
+               , COALESCE(he.description, '장애 모니터링') AS event_name
+               , COALESCE(heh.system_id, '')               AS system_id
+               , COALESCE(heh.op_system_id, '')            AS op_system_id
+               , COALESCE(heh.group_id, '')                AS group_id
+               , COALESCE(heh.bp_id, '')                   AS bp_id
+               , COALESCE(heh.bm_id, '')                   AS bm_id
+               , heh.event_timestamp                       AS event_time
+               , TRIM(heh.message)                         AS message
+        FROM     tb_hav_event_hist heh
+                 LEFT OUTER JOIN tb_hav_event he
+                 ON ( he.event_type = heh.event_type )
+        WHERE    heh.event_timestamp <![CDATA[ > ]]> #{selTimeStamp}
+        ORDER BY heh.event_timestamp DESC
+        LIMIT 1
+    </select>
+
+    <!-- 이벤트 알람 조회를 위한 현재 시간 -10초 조회 -->
+    <select id="selectCurrentTimeStamp" resultType="String">
+        SELECT   DATE_FORMAT(NOW() - INTERVAL 10 SECOND, '%Y%m%d%H%i%s')
+    </select>
+
+</mapper>

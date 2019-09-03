@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.fwk.MenuInfoMapper">
+
+    <!-- 메뉴 정보 조회 -->
+    <select id="selectMenuInfoList" resultType="MenuInfo">
+    WITH RECURSIVE recursive_list AS (
+        SELECT 1 AS depth
+             , CAST(gmi.menu_id AS CHAR(99)) AS menu_index
+             , CAST(LPAD(gmi.sort_order, 2, '0') AS CHAR(9))  AS order_seq
+             , gmi.menu_id
+             , COALESCE(gmi.parent_menu_id, '') AS parent_menu_id
+             , gmi.menu_name
+             , gmi.resource_id
+             , gmi.sort_order
+        FROM   tb_gui_menu_info gmi
+        WHERE  COALESCE(gmi.parent_menu_id, '') = ''
+        UNION ALL
+        SELECT rl.depth +1 AS depth
+             , CONCAT_WS(':', rl.menu_id, gmi.menu_id) AS menu_index
+             , CONCAT_WS('-', rl.order_seq, LPAD(gmi.sort_order, 2, '0'))  AS order_seq
+             , gmi.menu_id
+             , COALESCE(gmi.parent_menu_id, '') AS parent_menu_id
+             , gmi.menu_name
+             , gmi.resource_id
+             , gmi.sort_order
+        FROM   tb_gui_menu_info gmi
+             , recursive_list rl
+        WHERE  rl.menu_id = gmi.parent_menu_id
+    )
+    SELECT CONCAT(":", rl.menu_index)  AS menuindex
+         , rl.order_seq                AS menuindex2
+         , rl.resource_id
+         , rl.menu_id
+         , rl.menu_name
+         , rl.parent_menu_id
+         , gri.resource_name
+         , SUBSTR(gri.resource_path, 2) AS resource_path
+         , rl.depth AS `LEVEL`
+         , (CASE WHEN COALESCE(rl.parent_menu_id, '') = ''
+                 THEN DENSE_RANK()OVER (PARTITION BY rl.parent_menu_id ORDER BY rl.sort_order)
+                 ELSE 0
+            END) AS subcount
+         , rl.sort_order
+     FROM  recursive_list rl
+           LEFT OUTER JOIN tb_gui_resource_info gri
+           ON ( gri.resource_id = rl.resource_id
+            AND ( #{auth_group_id} = 'ADMIN'
+               OR EXISTS (
+                    SELECT 1 FROM tb_gui_resource_auth gra
+                    WHERE  gra.resource_id   = gri.resource_id
+                    AND    gra.auth_group_id = #{auth_group_id}
+                    AND    gra.access_yn     = 'Y'
+                  )
+                )
+           )
+    ORDER BY rl.order_seq
+           , rl.sort_order
+    </select>
+
+    <!-- 메뉴 정보 등록 -->
+    <insert id="insertMenuInfo" parameterType="MenuInfo">
+        INSERT INTO tb_gui_menu_info
+        ( menu_id
+        , parent_menu_id
+        , menu_name
+        , sort_order
+        , resource_id
+        )
+        VALUES
+        ( #{menuInfo.menu_id}
+        , #{menuInfo.parent_menu_id}
+        , #{menuInfo.menu_name}
+        , #{menuInfo.sort_order}
+        , #{menuInfo.resource_id}
+        )
+    </insert>
+
+    <!-- 메뉴 정보 수정 -->
+    <update id="updateMenuInfo" parameterType="MenuInfo">
+        UPDATE tb_gui_menu_info
+        SET    menu_name   = #{menuInfo.menu_name}
+             , sort_order  = #{menuInfo.sort_order}
+             , resource_id = #{menuInfo.resource_id}
+        WHERE  menu_id     = #{menuInfo.menu_id}
+    </update>
+
+    <!-- 메뉴 정보 삭제 -->
+    <delete id="deleteMenuInfo" parameterType="MenuInfo">
+        DELETE FROM tb_gui_menu_info
+        WHERE  menu_id = #{menuInfo.menu_id}
+        OR     parent_menu_id LIKE CONCAT(REPLACE(#{menuInfo.menu_id}, '00', ''), '%')
+    </delete>
+
+    <!-- 메뉴 리소스 정보 조회 -->
+    <select id="selectResourceInfoList" resultType="ResourceInfo">
+        SELECT   resource_id
+               , resource_name
+               , resource_path
+               , sort_order
+        FROM     tb_gui_resource_info
+        ORDER BY resource_name
+    </select>
+
+</mapper>

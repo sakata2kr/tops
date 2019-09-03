@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ########################################################################## -->
+<!-- ## Log Level Order (TRACE < DEBUG < INFO < WARN < ERROR) -->
+<!-- ## Level.ALL : The ALL is used to turn on all logging. -->
+<!-- ## Level.OFF : The OFF is used to turn off logging. -->
+<!-- ########################################################################## -->
+<configuration>
+
+    <property resource="application.properties" />
+
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+        <resetJUL>true</resetJUL>
+    </contextListener>
+
+    <!-- console log-->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%-30(%d{MM-dd HH:mm:ss.SSS} [%thread]) %highlight(%-6level) %-55(%cyan(%logger{15}:%line)) - %msg %n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- log file managing -->
+    <appender name="LOG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.home}/tops-spring-boot.log</file>
+        <append>true</append>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>${log.home}/tops-spring-boot.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- keep 30 days' worth of history -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%-42(%d{MM-dd HH:mm:ss.SSS} [%thread]) %-6level %-25(%logger{0}) - %msg %n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${log.level}</level>
+        </filter>
+    </appender>
+
+    <logger name="org.springframework" level="ERROR" />
+    <logger name="org.springframework.beans" level="ERROR" />
+    <logger name="org.springframework.web" level="ERROR" />
+    <logger name="org.springframework.web.context" level="ERROR" />
+
+    <logger name="org.mybatis" level="ERROR" />
+
+    <logger name="jdbc.sqlonly"  level="${log.level}" />
+    <logger name="jdbc.sqltiming"  level="${log.level}" />
+    <logger name="jdbc.audit"  level="OFF" />
+    <logger name="jdbc.resultset"  level="OFF" />
+    <logger name="jdbc.connection"  level="OFF" />
+    <logger name="jdbc.resultsettable"  level="OFF" />
+    <logger name="log4jdbc.debug"  level="OFF" />
+
+    <root level="${log.level}">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="LOG_FILE" />
+    </root>
+
+</configuration>

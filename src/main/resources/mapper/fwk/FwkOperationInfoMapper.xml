@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.fwk.FwkOperationInfoMapper">
+
+    <!--  TOPS Framework 상태 조회 -->
+    <select id="selectFwkProcessErrorInfo" resultType="DashBoardInfo">
+        SELECT (CASE WHEN fw_type = 'MASTER'         THEN 'MASTER'
+                     WHEN INSTR(fw_type, 'MGR') != 0 THEN 'MANAGER'
+                     WHEN INSTR(fw_type, 'AGT') != 0 THEN 'AGENT'
+                     ELSE 'ETC'
+                END)      AS comp_type
+              , fw_type   AS comp_id
+              , system_id AS sub_comp_id
+              , '3'       AS status
+        FROM TB_PRC_FWK_STATUS
+        WHERE status != 'PS03'
+    </select>
+
+    <!-- 서버 기준 전체 Queue 처리 상태 조회 -->
+    <select id="selectStatusByServer" resultType="QueueStatusInfo" parameterType="QueueStatusInfo">
+        SELECT   system_id         AS itm_cd
+               , SUM(file_count)   AS tot_file_count
+               , SUM(cdr_count)    AS tot_cdr_count
+               , MAX(avg_duration) AS max_avg_duration
+        FROM     tb_flw_queue_status
+        <if test="selItemInfoList.size() > 0">
+            WHERE    group_id IN (
+                <foreach collection="selItemInfoList" item="selItemInfo" separator=",">
+                    #{selItemInfo.itm_cd}
+                </foreach>
+            )
+        </if>
+        GROUP BY system_id
+        ORDER BY system_id
+    </select>
+
+    <!-- GROUP 기준 전체 Queue 처리 상태 조회 -->
+    <select id="selectStatusByGroup" resultType="QueueStatusInfo" parameterType="QueueStatusInfo">
+        SELECT   group_id          AS itm_cd
+               , SUM(file_count)   AS tot_file_count
+               , SUM(cdr_count)    AS tot_cdr_count
+               , MAX(avg_duration) AS max_avg_duration
+        FROM     tb_flw_queue_status
+        WHERE    op_system_id = #{op_system_id}
+        <if test="selItemInfoList.size() > 0">
+            AND      group_id IN (
+                <foreach collection="selItemInfoList" item="selItemInfo" separator=",">
+                    #{selItemInfo.itm_cd}
+                </foreach>
+            )
+        </if>
+        GROUP BY group_id
+        ORDER BY group_id
+    </select>
+
+    <!-- BP 기준 전체 Queue 처리 상태 조회 -->
+    <select id="selectStatusByBp" resultType="QueueStatusInfo" parameterType="String">
+        SELECT   bp_id             AS itm_cd
+               , SUM(file_count)   AS tot_file_count
+               , SUM(cdr_count)    AS tot_cdr_count
+               , MAX(avg_duration) AS max_avg_duration
+        FROM     tb_flw_queue_status
+        WHERE    group_id     = #{group_id}
+        AND      op_system_id = #{op_system_id}
+        GROUP BY bp_id
+        ORDER BY bp_id
+    </select>
+
+    <!-- Queue 상태 모니터링용 데이터 조회 (TOP 100) -->
+    <select id="selectTopQueueInfo" resultType="ServerStatAbnormalInfo">
+        SELECT   system_id
+               , group_id
+               , bp_id
+               , bm_id
+               , file_count
+               , cdr_count
+               , avg_duration
+        FROM     tb_flw_queue_status
+        WHERE    queue_file_status != '0'
+        OR       queue_cdr_status  != '0'
+        OR       queue_dura_status != '0'
+        ORDER BY cdr_count DESC
+               , file_count DESC
+               , avg_duration DESC
+               , system_id
+               , group_id
+               , bp_id
+               , bm_id
+        LIMIT 100
+    </select>
+
+</mapper>

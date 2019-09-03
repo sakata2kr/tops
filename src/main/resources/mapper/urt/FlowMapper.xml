@@ -1,0 +1,512 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.urt.FlowMapper">
+
+    <resultMap id="businessProcessResultMap" type="BusinessProcess">
+        <id column="bp_id" property="bp_id" jdbcType="VARCHAR" />
+        <result column="bp_name" property="bp_name" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <resultMap id="businessModuleResultMap" type="BusinessModule">
+        <id column="bm_id" property="bm_id" jdbcType="VARCHAR" />
+        <result column="bm_name" property="bm_name" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <resultMap id="flowEntityResultMap" type="FlowEntity">
+        <result column="curr_key"            property="key"                             jdbcType="VARCHAR" />
+        <result column="flow_id"             property="flow_id"                         jdbcType="VARCHAR" />
+        <result column="system_id"           property="system_id"                       jdbcType="VARCHAR" />
+        <result column="group_id"            property="group_id"                        jdbcType="VARCHAR" />
+        <result column="bp_id"               property="bp.bp_id"                        jdbcType="VARCHAR" />
+        <result column="bp_name"             property="bp.bp_name"                      jdbcType="VARCHAR" />
+        <result column="auto_restart_cnt"    property="bp.auto_restart_cnt"             jdbcType="NUMERIC" />
+        <result column="parameter"           property="bp.parameter"                    jdbcType="VARCHAR" />
+        <result column="usage"               property="bp.usage"                        jdbcType="VARCHAR" />
+        <result column="bm_id"               property="bm.bm_id"                        jdbcType="VARCHAR" />
+        <result column="bm_name"             property="bm.bm_name"                      jdbcType="VARCHAR" />
+        <result column="min_thread_instance" property="bm.min_thread_instance"          jdbcType="NUMERIC" />
+        <result column="max_thread_instance" property="bm.max_thread_instance"          jdbcType="NUMERIC" />
+        <result column="prev_key"            property="prevEntity.key"                  jdbcType="VARCHAR" />
+        <result column="prev_system_id"      property="prevEntity.system_id"            jdbcType="VARCHAR" />
+        <result column="prev_group_id"       property="prevEntity.group_id"             jdbcType="VARCHAR" />
+        <result column="prev_bpid"           property="prevEntity.bp.bp_id"             jdbcType="VARCHAR" />
+        <result column="prev_bmid"           property="prevEntity.bm.bm_id"             jdbcType="VARCHAR" />
+        <result column="branch_op"           property="flowInfoDetail.branch_op"        jdbcType="VARCHAR" />
+        <result column="branch_value"        property="flowInfoDetail.branch_value"     jdbcType="VARCHAR" />
+        <result column="next_app_type"       property="flowInfoDetail.next_app_type"    jdbcType="VARCHAR" />
+        <result column="prev_exit_status"    property="flowInfoDetail.prev_exit_status" jdbcType="VARCHAR" />
+        <result column="flow_condition"      property="flowInfoDetail.flow_condition"   jdbcType="VARCHAR" />
+        <result column="port"                property="flowInfoDetail.port"             jdbcType="NUMERIC" />
+        <result column="position_x"          property="position.x"                      jdbcType="NUMERIC" />
+        <result column="position_y"          property="position.y"                      jdbcType="NUMERIC" />
+    </resultMap>
+
+    <!-- 등록된 Flow 리스트 조회 -->
+    <select id="selectFlowInfoList" parameterType="GroupInfo" resultType="FlowidInfo">
+        SELECT   tf.flow_id
+               , ffd.flow_name
+               , ffd.description
+               , gid3.itm_cd      AS group_ctg1_cd
+               , gid3.itm_name    AS group_ctg1_name
+               , gid2.itm_cd      AS group_ctg2_cd
+               , gid2.itm_name    AS group_ctg2_name
+               , tf.group_id      AS group_id
+               , tf.group_name    AS group_name
+        FROM     (
+            SELECT DISTINCT
+                   flow_id
+                 , pg.group_id
+                 , pg.group_name
+            FROM   tb_flw_flow ff
+                 , tb_prc_group pg
+            WHERE  ff.prev_group_id = pg.group_id
+            <if test = "groupInfo.group_name != null and groupInfo.group_name != ''">
+                AND  pg.group_name LIKE CONCAT('%', #{groupInfo.group_name}, '%')
+            </if>
+            ) tf
+               , tb_flw_flowid ffd
+               , tb_gui_itm_def gid1
+               , tb_gui_itm_def gid2
+               , tb_gui_itm_def gid3
+        WHERE    ffd.flow_id     = tf.flow_id
+        AND      gid1.itm_cd     = tf.group_id
+        AND      gid1.itm_grp_cd = 'GROUP_ID'
+        AND      gid2.itm_grp_cd = gid1.rel_itm_grp_cd
+        AND      gid2.itm_cd     = gid1.rel_itm_cd
+        AND      gid3.itm_grp_cd = gid2.rel_itm_grp_cd
+        AND      gid3.itm_cd     = gid2.rel_itm_cd
+        ORDER BY gid3.itm_seq
+               , gid3.itm_cd
+               , gid2.itm_seq
+               , gid2.itm_cd
+               , gid1.itm_seq
+               , tf.group_id
+               , tf.flow_id
+    </select>
+
+    <!-- BP Group 리스트 조회 -->
+    <select id="selectBpNameList" resultMap="businessProcessResultMap">
+        SELECT   pb.bp_name
+        FROM     tb_prc_bpid pb
+                 LEFT OUTER JOIN tb_gui_itm_def gid
+                 ON ( gid.itm_grp_cd = 'BP_NAME'
+                  AND gid.itm_cd     = pb.bp_name
+                    )
+        GROUP BY gid.itm_seq
+               , pb.bp_name
+        ORDER BY gid.itm_seq
+               , pb.bp_name
+    </select>
+
+    <!-- BP Group에 해당하는 BP 리스트 조회 -->
+    <select id="selectBpInfoByBpName" parameterType="String" resultMap="businessProcessResultMap">
+        SELECT  pb.bp_id
+              , pb.bp_name
+        FROM    tb_prc_bpid pb
+        WHERE   pb.bp_name   = #{bp_name}
+    </select>
+
+    <!-- BP ID에 해당하는 BM 리스트 조회 -->
+    <select id="selectBmInfoByBpId" parameterType="String" resultMap="businessModuleResultMap">
+        /* 차후 확인 필요 */
+        SELECT pbm.bm_id
+             , pbm.bm_name
+        FROM   tb_prc_bmid pbm
+        WHERE  pbm.bm_id IN (
+            SELECT bm_id
+            FROM   tb_prc_bmid_mapping
+            WHERE  bp_id = #{bp_id}
+            )
+        )
+    </select>
+
+    <!-- 해당 SYSTEM/GROUP에만 속한 BM 정보 존재 시 삭제 -->
+    <delete id="deleteBmInfo" parameterType="String">
+        DELETE tb_prc_bmid pbm
+        WHERE  bm_id IN (
+            SELECT 1
+            FROM   tb_prc_bmid_mapping pbmm
+            WHERE  pbmm.system_id = #{system_id}
+            AND    pbmm.group_id  = #{group_id}
+            AND    NOT EXISTS (
+                SELECT 1
+                FROM   tb_prc_bmid_mapping pbmm2
+                WHERE  pbmm2.bm_id      = pbpm.bm_id
+                AND  ( pbmm2.system_id != pbpm.system_id
+                    OR pbmm2.group_id  != pbpm.group_id
+                    OR pbmm2.bp_id     != pbmm.bp_id
+                     )
+            )
+            AND    NOT EXISTS (
+                SELECT 1
+                FROM  tb_prc_bm_status pbs
+                WHERE pbs.system_id = pbmm.system_id
+                AND   pbs.group_id  = pbmm.group_id
+                AND   pbs.bp_id     = pbmm.bp_id
+                AND   pbs.status    = 'PS06'
+            )
+        )
+    </delete>
+
+    <!-- SYSTEM/GROUP에 해당하는 BM 매핑 정보들 삭제 -->
+    <delete id="deleteBmInfoMapping" parameterType="String">
+        DELETE tprc_bmid_mapping pbmm
+        WHERE  pbmm.system_id = #{system_id}
+        AND    pbmm.group_id  = #{group_id}
+        AND    NOT EXISTS (
+            SELECT 1 FROM tb_prc_bm_status pbs
+            WHERE pbs.system_id = pbmm.system_id
+            AND   pbs.group_id  = pbpm.group_id
+            AND   pbs.bp_id     = pbpm.bp_id
+            AND   pbs.status    = 'PS06'
+        )
+    </delete>
+
+    <!-- 해당 SYSTEM/GROUP에만 속한 BP 정보 존재 시 삭제 -->
+    <delete id="deleteBpinfo" parameterType="String">
+        DELETE tb_prc_bpid pbp
+        WHERE  bp_id IN (
+            SELECT bp_id
+            FROM   tb_prc_bpid_mapping pbpm
+            WHERE  pbpm.system_id = #{system_id}
+            AND    pbpm.group_id  = #{group_id}
+            AND    NOT EXISTS (
+                SELECT 1
+                FROM   tb_prc_bpid_mapping pbpm2
+                WHERE  pbpm2.bp_id      = pbpm.bp_id
+                AND  ( pbpm2.system_id != pbpm.system_id
+                    OR pbpm2.group_id  != pbpm.group_id
+                     )
+            )
+            AND    NOT EXISTS (
+                SELECT 1
+                FROM  tb_prc_bm_status pbs
+                WHERE pbs.system_id = pbpm.system_id
+                AND   pbs.group_id  = pbpm.group_id
+                AND   pbs.bp_id     = pbpm.bp_id
+                AND   pbs.status    = 'PS06'
+            )
+        )
+    </delete>
+
+    <!-- SYSTEM/GROUP에 해당하는 BP 매핑 정보들 삭제 -->
+    <delete id="deleteBpInfoMapping" parameterType="String">
+        DELETE tb_prc_bpid_mapping pbpm
+        WHERE  pbpm.system_id = #{system_id}
+        AND    pbpm.group_id  = #{group_id}
+        AND    NOT EXISTS (
+            SELECT 1
+            FROM  tb_prc_bm_status pbs
+            WHERE pbs.system_id = pbpm.system_id
+            AND   pbs.group_id  = pbpm.group_id
+            AND   pbs.bp_id     = pbpm.bp_id
+            AND   pbs.status    = 'PS06'
+        )
+    </delete>
+
+    <!-- Flow ID에 해당하는 Flow Diagram Entity 정보들 삭제 -->
+    <delete id="deleteFlowInfo" parameterType="String">
+        DELETE FROM tb_flw_flow
+        WHERE  flow_id   = #{flow_id}
+        AND    system_id = #{system_id}
+        AND    group_id  = #{group_id}
+    </delete>
+
+    <!-- BP 정보 등록 -->
+    <insert id="insertBpInfo" parameterType="map" useGeneratedKeys="false">
+        INSERT INTO tb_prc_bpid
+        ( bp_id
+        , binary_id
+        , bp_name
+        , auto_restart_cnt
+        )
+        VALUES
+        ( #{flowEntity.bp.bp_id,            jdbcType=VARCHAR}
+        , #{flowEntity.bp.binary_id,        jdbcType=VARCHAR}
+        , #{flowEntity.bp.bp_name,          jdbcType=VARCHAR}
+        , #{flowEntity.bp.auto_restart_cnt, jdbcType=NUMERIC}
+        , 'N'
+        )
+    </insert>
+
+    <!-- Group, BP 매핑 정보 등록 -->
+    <insert id="insertBpInfoMapping" parameterType="map" useGeneratedKeys="false">
+        INSERT INTO tb_prc_bpid_mapping
+        ( system_id
+        , group_id
+        , bp_id
+        , parameter
+        , usage
+        )
+        VALUES
+        ( #{flowEntity.System_id,    jdbcType=VARCHAR}
+        , #{flowEntity.group_id,     jdbcType=VARCHAR}
+        , #{flowEntity.bp.bp_id,     jdbcType=VARCHAR}
+        , #{flowEntity.bp.parameter, jdbcType=VARCHAR}
+        , 'N'
+        )
+    </insert>
+
+    <!-- BM 정보 등록 -->
+    <insert id="insertBmInfo" parameterType="map" useGeneratedKeys="false">
+        INSERT INTO tb_prc_bmid
+        ( bm_id
+        , bm_name
+        , binary_id
+        )
+        VALUES
+        ( #{flowEntity.bm.bm_id,            jdbcType=VARCHAR}
+        , #{flowEntity.bm.bm_name,          jdbcType=VARCHAR}
+        , #{flowEntity.bm.binary_id,        jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <!-- Group, BM 매핑 정보 등록 -->
+    <insert id="insertBmInfoMapping" parameterType="map" useGeneratedKeys="false">
+        INSERT INTO tb_prc_bmid_mapping
+        ( biz_domain
+        , system_id
+        , group_id
+        , bp_id
+        , bm_id
+        , min_thread_instance
+        , max_thread_instance
+        , db_commit_yn
+        , transaction_end_yn
+        , unit_cdr_cnt
+        )
+        VALUES
+        ( 'IPMD'
+        , #{flowEntity.System_id,             jdbcType=VARCHAR}
+        , #{flowEntity.group_id,              jdbcType=VARCHAR}
+        , #{flowEntity.bp.bp_id,              jdbcType=VARCHAR}
+        , #{flowEntity.bm.bm_id,              jdbcType=VARCHAR}
+        , #{flowEntity.bm.minThreadInstance,  jdbcType=NUMERIC}
+        , #{flowEntity.bm.maxThreadInstance,  jdbcType=NUMERIC}
+        , #{flowEntity.bm.db_commit_yn,       jdbcType=VARCHAR}
+        , #{flowEntity.bm.transaction_end_yn, jdbcType=VARCHAR}
+        , #{flowEntity.bm.unit_cdr_cnt,       jdbcType=NUMERIC}
+        )
+    </insert>
+
+    <!-- Flow Diagram Entity 정보 등록 -->
+    <insert id="insertFlowInfo" parameterType="map" useGeneratedKeys="false">
+        INSERT INTO tb_flw_flow
+        ( flow_id
+        , system_id
+        , group_id
+        , bp_id
+        , bm_id
+        , prev_system_id
+        , prev_group_id
+        , prev_bpid
+        , prev_bmid
+        , branch_op
+        , branch_value
+        , next_app_type
+        , prev_exit_status
+        , flow_condition
+        , port
+        )
+        VALUES
+        ( #{flowEntity.flow_id,                         jdbcType=VARCHAR}
+        , #{flowEntity.System_id,                       jdbcType=VARCHAR}
+        , #{flowEntity.group_id,                        jdbcType=VARCHAR}
+        , #{flowEntity.bp.bp_id,                        jdbcType=VARCHAR}
+        , #{flowEntity.bm.bm_id,                        jdbcType=VARCHAR}
+        , #{flowEntity.prevEntity.System_id,            jdbcType=VARCHAR}
+        , #{flowEntity.prevEntity.group_id,             jdbcType=VARCHAR}
+        , #{flowEntity.prevEntity.bp.bp_id,             jdbcType=VARCHAR}
+        , #{flowEntity.prevEntity.bm.bm_id,             jdbcType=VARCHAR}
+        , #{flowEntity.flowInfoDetail.branch_op,        jdbcType=VARCHAR}
+        , #{flowEntity.flowInfoDetail.branch_value,     jdbcType=VARCHAR}
+        , #{flowEntity.flowInfoDetail.next_app_type,    jdbcType=VARCHAR}
+        , #{flowEntity.flowInfoDetail.prev_exit_status, jdbcType=VARCHAR}
+        , #{flowEntity.flowInfoDetail.flow_condition,   jdbcType=VARCHAR}
+        , #{flowEntity.flowInfoDetail.port,             jdbcType=NUMERIC}
+        )
+    </insert>
+
+    <!-- Flow ID에 해당하는 Flow Diagram Entity 리스트 조회 -->
+    <select id="selectRecursiveFlowList" parameterType="map" resultMap="flowEntityResultMap">
+        WITH RECURSIVE recursive_list AS (
+            SELECT    CAST('ROOT' AS CHAR(99))  AS prev_key
+                    , CONCAT_WS('|', ff.system_id
+                                   , ff.group_id
+                                   , ff.bp_id
+                                   , ff.bm_id
+                                )         AS curr_key
+                    , 1                   AS col_seq
+                    , ff.flow_id
+                    , ff.system_id
+                    , ff.group_id
+                    , ff.bp_id
+                    , ff.bm_id
+                    , ff.prev_system_id
+                    , ff.prev_group_id
+                    , ff.prev_bp_id
+                    , ff.prev_bm_id
+                    , ff.branch_op
+                    , ff.branch_value
+                    , ff.next_app_type
+                    , ff.prev_exit_status
+                    , ff.flow_condition
+                    , ff.port
+            FROM      tb_flw_flow    ff
+                    , tb_prc_group   pg
+                    , tb_gui_itm_def gid1
+                    , tb_gui_itm_def gid2
+                    , tb_gui_itm_def gid3
+            WHERE     ff.group_id       = #{group_id}
+             AND   ( ( ff.prev_group_id = ff.group_id
+                  AND ff.prev_system_id = ff.system_id
+                  AND ff.prev_bp_id     = ff.bp_id
+                  AND ff.prev_bm_id     = ff.bm_id
+                    )
+                 OR ( ff.prev_group_id != #{group_id} )
+                  )
+            AND       pg.group_id      = ff.group_id
+            AND       gid1.itm_cd      = pg.group_id
+            AND       gid1.itm_grp_cd  = 'GROUP_ID'
+            AND       gid2.itm_cd      = gid1.rel_itm_cd
+            AND       gid2.itm_grp_cd  = gid1.rel_itm_grp_cd
+            AND       gid3.itm_cd      = gid2.rel_itm_cd
+            AND       gid3.itm_grp_cd  = gid2.rel_itm_grp_cd
+            UNION ALL
+            SELECT    CONCAT_WS('|', ff.prev_system_id
+                                , ff.prev_group_id
+                                , ff.prev_bp_id
+                                , ff.prev_bm_id
+                            )             AS prev_key
+                    , CONCAT_WS('|', ff.system_id
+                                   , ff.group_id
+                                   , ff.bp_id
+                                   , ff.bm_id
+                                )         AS curr_key
+                    , rl.col_seq +1       AS col_seq
+                    , ff.flow_id
+                    , ff.system_id
+                    , ff.group_id
+                    , ff.bp_id
+                    , ff.bm_id
+                    , ff.prev_system_id
+                    , ff.prev_group_id
+                    , ff.prev_bp_id
+                    , ff.prev_bm_id
+                    , ff.branch_op
+                    , ff.branch_value
+                    , ff.next_app_type
+                    , ff.prev_exit_status
+                    , ff.flow_condition
+                    , ff.port
+            FROM      tb_flw_flow ff
+                    , recursive_list rl
+                    , tb_prc_group   pg
+                    , tb_gui_itm_def gid1
+                    , tb_gui_itm_def gid2
+                    , tb_gui_itm_def gid3
+            WHERE     ff.prev_group_id = #{group_id}
+            AND       rl.system_id     = ff.prev_system_id
+            AND       rl.group_id      = ff.prev_group_id
+            AND       rl.bp_id         = ff.prev_bp_id
+            AND       rl.bm_id         = ff.prev_bm_id
+            AND     ( ff.group_id     != ff.prev_group_id
+                   OR ff.system_id    != ff.prev_system_id
+                   OR ff.bp_id        != ff.prev_bp_id
+                   OR ff.bm_id        != ff.prev_bm_id
+                    )
+            AND       pg.group_id      = ff.group_id
+            AND       gid1.itm_cd      = pg.group_id
+            AND       gid1.itm_grp_cd  = 'GROUP_ID'
+            AND       gid2.itm_cd      = gid1.rel_itm_cd
+            AND       gid2.itm_grp_cd  = gid1.rel_itm_grp_cd
+            AND       gid3.itm_cd      = gid2.rel_itm_cd
+            AND       gid3.itm_grp_cd  = gid2.rel_itm_grp_cd
+        )
+        , total_list AS (
+            SELECT   DISTINCT 
+                     prev_key
+                   , curr_key
+                   , MAX(col_seq)OVER (PARTITION BY curr_key) AS col_seq
+                   , flow_id
+                   , system_id
+                   , group_id
+                   , bp_id
+                   , bm_id
+                   , prev_system_id
+                   , prev_group_id
+                   , prev_bp_id
+                   , prev_bm_id
+                   , branch_op
+                   , branch_value
+                   , next_app_type
+                   , prev_exit_status
+                   , flow_condition
+                   , port
+            FROM     recursive_list
+        )
+        SELECT   tl.prev_key
+               , tl.curr_key
+               , tl.flow_id
+               , tl.system_id
+               , tl.group_id
+               , tl.bp_id
+               , pbp.bp_name
+               , CONCAT_WS(' / ', pbppm.parameter, tl.curr_key) AS parameter
+               , tl.bm_id
+               , pbm.bm_name
+               , pgbmm.min_thread_instance
+               , pgbmm.max_thread_instance
+               , tl.prev_system_id
+               , tl.prev_group_id
+               , tl.prev_bp_id
+               , tl.prev_bm_id
+               , tl.branch_op
+               , tl.branch_value
+               , tl.next_app_type
+               , tl.prev_exit_status
+               , tl.flow_condition
+               , tl.port
+               , (DENSE_RANK()OVER( ORDER BY tl.col_seq, tl.flow_id, pbm.bm_name) -1) * 140 + 20 AS position_x
+               , (DENSE_RANK()OVER( PARTITION BY tl.col_seq ORDER BY tl.flow_id, tl.system_id, tl.group_id, tl.bp_id, tl.bm_id) -1) * 50 + 20 AS position_y
+        FROM     total_list          tl
+               , tb_prc_bpid_mapping pbppm
+               , tb_prc_bpid         pbp
+               , tb_prc_bmid_mapping pgbmm
+               , tb_prc_bmid         pbm
+                 LEFT OUTER JOIN tb_gui_itm_def gid
+                 ON ( gid.itm_grp_cd = 'BM_NAME'
+                  AND gid.itm_cd     = pbm.bm_name
+                 )
+        WHERE    pbppm.system_id = tl.system_id
+        AND      pbppm.group_id  = tl.group_id
+        AND      pbppm.bp_id     = tl.bp_id
+        AND      pbp.bp_id       = pbppm.bp_id
+        AND      pgbmm.system_id = tl.system_id
+        AND      pgbmm.group_id  = tl.group_id
+        AND      pgbmm.bp_id     = tl.bp_id
+        AND      pgbmm.bm_id     = tl.bm_id
+        AND      pbm.bm_id       = pgbmm.bm_id
+        ORDER BY position_x
+               , position_y
+               , tl.prev_key
+               , tl.curr_key
+    </select>
+
+    <!-- Flow 신규/수정 여부 조회를 위한 건수 추출 -->
+    <select id="selectFlowInfoCount" parameterType="String" resultType="Integer">
+        SELECT COUNT(1)
+        FROM   tb_flw_flow
+        WHERE  flow_id = #{flow_id}
+    </select>
+
+    <!-- Group ID에 해당하는 기동중인 프로세스 개수 조회 -->
+    <select id="selectRunningProcessCountByGroupId" parameterType="String" resultType="Integer">
+        SELECT COUNT(1)
+        FROM   tb_prc_bm_status
+        WHERE  group_id = #{group_id}
+        AND    status   = 'PS03'
+        AND    bm_id    = '000000'
+    </select>
+
+</mapper>

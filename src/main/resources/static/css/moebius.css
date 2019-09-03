@@ -1,0 +1,28 @@
+
+@font-face {
+  font-family: 'Moebius';
+  font-style: normal;
+  font-weight: 400;
+  src: url(../font/Moebius_Regular_kor.eot);
+  src: url(../font/Moebius_Regular_kor.eot?#iefix) format('embedded-opentype'),
+       url(../font/Moebius_Regular_kor.woff) format('woff'),
+       url(../font/Moebius_Regular_kor.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Moebius';
+  font-style: normal;
+  font-weight: 700;
+  src: url(../font/Moebius_Regular_kor.eot);
+  src: url(../font/Moebius_Regular_kor.eot?#iefix) format('embedded-opentype'),
+       url(../font/Moebius_Regular_kor.woff) format('woff'),
+       url(../font/Moebius_Regular_kor.ttf) format('truetype');
+}
+@font-face {
+    font-family: 'Moebius';
+    font-style: normal;
+    font-weight: 800;
+    src: url(../font/Moebius_Regular_kor.eot);
+    src: url(../font/Moebius_Regular_kor.eot?#iefix) format('embedded-opentype'),
+    url(../font/Moebius_Regular_kor.woff) format('woff'),
+    url(.ttf) format('truetype');
+}

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.urt.UrtViewTableMapper">
+
+    <!-- 테이블 리스트 조회 -->
+    <select id="urtTableList" resultType="ViewTableModel">
+        SELECT   als.table_name  AS tableName
+               , als.owner       AS ownerId
+        FROM     all_synonyms als
+        WHERE    als.owner = 'OSSURT'
+        AND      als.synonym_name NOT LIKE '%STATUS%'
+        AND      als.synonym_name NOT LIKE '%HIST%'
+        AND      als.synonym_name NOT LIKE '%LOG%'
+        AND      EXISTS (
+            SELECT 1 FROM all_tables WHERE table_name = als.table_name
+        )
+        ORDER BY als.table_name
+    </select>
+
+    <!-- 컬럼 리스트 조회 -->
+    <select id="urtColumnList" resultType="ViewTableModel" parameterType="java.util.Map">
+        SELECT   atc.column_name AS columnName
+               , atc.data_type   AS dataType
+               , atc.table_Name  AS tableName
+               , atc.owner       AS ownerId
+        FROM     all_synonyms als
+               , all_tab_columns atc
+        WHERE    als.owner = #{ownerId}
+        AND      als.synonym_name = #{tableName}
+        AND      atc.owner        = als.table_owner
+        AND      atc.table_name   = als.table_name
+        ORDER BY column_id
+    </select>
+
+    <!-- 테이블 PK조회 (Update처리용) -->
+    <select id= "urtColumnPk" resultType="java.util.Map">
+        SELECT   acc.column_name AS columnPk
+        FROM     all_constraints  alc
+               , all_cons_columns acc
+        WHERE    alc.table_name      = #{tableName}
+        AND      alc.constraint_type = 'P'
+        AND      acc.constraint_name = alc.constraint_name
+        ORDER BY acc.position
+
+    </select>
+
+	<!-- 테이블 Row Count -->
+    <select id= "urtAllRow" resultType="int">
+        SELECT COUNT(1) AS allRow
+        FROM   ${tableName}
+    </select>
+
+    <!-- 테이블 상세 조회 -->
+    <select id="urtTableDetail" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT
+            <foreach collection="urtColumnList" index="index" item="urtColumnList" separator=",">
+                b.${urtColumnList.columnName}
+            </foreach>
+        FROM
+        (
+        SELECT
+            <foreach collection="urtColumnList" index="index" item="urtColumnList" >
+                a.${urtColumnList.columnName},
+            </foreach>
+                ROWNUM RN
+        FROM
+        (
+        SELECT
+        <trim suffixOverrides=",">
+            <foreach item="urtColumnList" index="index" collection="urtColumnList">
+                <choose>
+                    <when test='urtColumnList.dataType.equals("NUMBER")'>
+                        NVL(TO_CHAR(${urtColumnList.columnName}, '9999999'), '-') ${urtColumnList.columnName},
+                    </when>
+                    <when test='urtColumnList.dataType.equals("DATE")'>
+                        NVL(TO_CHAR(${urtColumnList.columnName}, 'YYYYMMDDHH24MISS'), '-') ${urtColumnList.columnName},
+                    </when>
+                    <otherwise>
+                        NVL(${urtColumnList.columnName}, '-') ${urtColumnList.columnName},
+                    </otherwise>
+                </choose>
+            </foreach>
+        </trim>
+        FROM ${tableName}
+        ) a
+        ORDER BY ROWNUM
+        ) b
+        WHERE RN BETWEEN ${startRow} AND ${endRow}
+    </select>
+
+    <!-- 테이블 Insert  -->
+    <insert id="urtViewTableInsert"  parameterType="java.util.Map">
+        INSERT INTO ${tableName}
+        (
+            <trim suffixOverrides = ",">
+                <foreach item = "value" index = "key" collection = "urtInsertDataMap">
+                    ${key},
+                </foreach>
+            </trim>
+        )
+        VALUES
+        (
+            <trim suffixOverrides = ",">
+                <foreach item = "value" index = "key" collection = "urtInsertDataMap">
+                    ${value},
+                </foreach>
+            </trim>
+        )
+    </insert>
+
+    <!-- 테이블 Update  -->
+    <update id="urtViewTableUpdate" parameterType="java.util.Map">
+        UPDATE ${tableName}
+        SET
+        <trim suffixOverrides=",">
+            <foreach item="value" index="key" collection="urtUpdateDataMap">
+                ${key} = ${value},
+            </foreach>
+        </trim>
+        <trim prefix="WHERE" prefixOverrides="AND|OR">
+            <foreach item="value" index="key" collection="urtPkMap">
+                AND ${key} = ${value}
+            </foreach>
+        </trim>
+    </update>
+
+    <!-- 테이블 Delete  -->
+    <delete id="urtViewTableRemove" parameterType="java.util.Map" >
+        DELETE FROM ${tableName}
+        WHERE
+        <trim prefixOverrides="AND|OR">
+            <foreach item="value" index="key" collection="urtRemoveDataMap">
+                AND ${key} = ${value}
+            </foreach>
+        </trim>
+    </delete>
+
+</mapper>

@@ -1,0 +1,30 @@
+table.dataTable thead th,
+table.dataTable tfoot th {
+    cursor: pointer;
+}
+
+table.dataTable thead .sorting {
+  background: url("../img/dataTable/sort_both.png") no-repeat center right;
+  background-color: #43474e;
+  color: #FFF;
+}
+table.dataTable thead .sorting_asc {
+  background: url("../img/dataTable/sort_asc.png") no-repeat center right;
+  background-color: #43474e;
+  color: #FFF;
+}
+table.dataTable thead .sorting_desc {
+  background: url("../img/dataTable/sort_desc.png") no-repeat center right;
+  background-color: #43474e;
+  color: #FFF;
+}
+table.dataTable thead .sorting_asc_disabled {
+  background: url("../img/dataTable/sort_asc_disabled.png") no-repeat center right;
+  background-color: #43474e;
+  color: #FFF;
+}
+table.dataTable thead .sorting_desc_disabled {
+  background: url("../img/dataTable/sort_desc_disabled.png") no-repeat center right;
+  background-color: #43474e;
+  color: #FFF;
+}

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.fwk.FwkViewTableMapper">
+
+    <!-- 테이블 리스트 조회 -->
+    <select id="fwkTableList" resultType="ViewTableModel">
+        SELECT   als.table_name  AS tableName
+               , als.owner AS ownerId
+        FROM     all_synonyms als
+        WHERE    als.owner = 'OSSFWK'
+        AND      als.synonym_name NOT LIKE '%STATUS%'
+        AND      als.synonym_name NOT LIKE '%HIST%'
+        AND      als.synonym_name NOT LIKE '%LOG%'
+        AND      EXISTS (
+            SELECT 1 FROM all_tables WHERE table_name = als.table_name
+        )
+        ORDER BY als.table_name
+    </select>
+
+    <!-- 컬럼 리스트 조회 -->
+    <select id="fwkColumnList" resultType="ViewTableModel">
+        SELECT   atc.column_name AS columnName
+               , atc.data_type   AS dataType
+               , atc.table_Name  AS tableName
+               , atc.owner       AS ownerId
+        FROM     all_synonyms als
+               , all_tab_columns atc
+        WHERE    als.owner = 'OSSFWK'
+        AND      als.synonym_name = #{tableName}
+        AND      atc.owner        = als.table_owner
+        AND      atc.table_name   = als.table_name
+        ORDER BY column_id
+    </select>
+
+    <!-- 테이블 PK조회 (Update처리용) -->
+    <select id= "fwkColumnPk" resultType="java.util.Map">
+        SELECT   acc.column_name AS columnPk
+        FROM     all_constraints  alc
+               , all_cons_columns acc
+        WHERE    alc.table_name      = #{tableName}
+        AND      alc.constraint_type = 'P'
+        AND      acc.constraint_name = alc.constraint_name
+        ORDER BY acc.position
+    </select>
+    
+	<!-- 테이블 Row Count  -->
+    <select id= "fwkAllRow" resultType="int" >
+        SELECT COUNT(1) AS allRow
+        FROM   ${tableName}
+    </select>
+
+    <!-- 테이블 상세 조회 -->
+    <select id="fwkTableDetail" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT
+            <foreach collection="fwkColumnList" index="index" item="fwkColumnList" separator=",">
+                b.${fwkColumnList.columnName}
+            </foreach>
+        FROM
+        (
+        SELECT
+            <foreach collection="fwkColumnList" index="index" item="fwkColumnList" >
+                a.${fwkColumnList.columnName},
+            </foreach>
+                ROWNUM RN
+        FROM
+        (
+        SELECT
+        <trim suffixOverrides=",">
+            <foreach item="fwkColumnList" index="index" collection="fwkColumnList">
+                <choose>
+                    <when test='fwkColumnList.dataType.equals("NUMBER")'>
+                        NVL(TO_CHAR(${fwkColumnList.columnName}, '9999999'), '-') ${fwkColumnList.columnName},
+                    </when>
+                    <when test='fwkColumnList.dataType.equals("DATE")'>
+                        NVL(TO_CHAR(${fwkColumnList.columnName}, 'YYYYMMDDHH24MISS'), '-') ${fwkColumnList.columnName},
+                    </when>
+                    <otherwise>
+                        NVL(${fwkColumnList.columnName}, '-') ${fwkColumnList.columnName},
+                    </otherwise>
+                </choose>
+            </foreach>
+        </trim>
+        FROM ${tableName}
+        ) a
+        ORDER BY ROWNUM
+        ) b
+        WHERE RN BETWEEN ${startRow} AND ${endRow}
+    </select>
+
+	<!-- 테이블 Insert  -->
+    <insert id="fwkViewTableInsert"  parameterType="java.util.Map">
+        INSERT INTO ${tableName}
+        (
+         <trim suffixOverrides=",">
+            <foreach item="value" index="key" collection="fwkInsertDataMap">
+                ${key},
+            </foreach>
+        </trim>
+        )
+        VALUES
+        (
+        <trim suffixOverrides=",">
+            <foreach item="value" index="key" collection="fwkInsertDataMap">
+                ${value},
+            </foreach>
+        </trim>
+        )
+    </insert>
+
+	<!-- 테이블 Update  -->
+    <update id="fwkViewTableUpdate" parameterType="java.util.Map">
+        UPDATE ${tableName}
+        SET
+        <trim suffixOverrides=",">
+            <foreach item="value" index="key" collection="fwkUpdateDataMap">
+                ${key} = ${value},
+            </foreach>
+        </trim>
+        <trim prefix="WHERE" prefixOverrides="AND|OR">
+            <foreach item="value" index="key" collection="fwkPkMap">
+                AND ${key} = ${value}
+            </foreach>
+        </trim>
+    </update>
+
+	<!-- 테이블 Delete  -->
+    <delete id="fwkViewTableRemove" parameterType="java.util.Map" >
+        DELETE FROM ${tableName}
+        WHERE
+         <trim prefixOverrides="AND|OR">
+            <foreach item="value" index="key" collection="fwkRemoveDataMap">
+                AND ${key} = ${value}
+            </foreach>
+        </trim>
+    </delete>
+
+</mapper>

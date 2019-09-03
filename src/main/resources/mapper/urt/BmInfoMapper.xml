@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.urt.BmInfoMapper">
+
+    <!-- BM 정보 조회(단건) -->
+    <select id="selectBmInfo" resultType="BmInfo">
+        SELECT TRIM(biz_domain) AS biz_domain
+             , bm_id
+             , bm_name
+             , binary_id
+             , ui_bp_group
+        FROM   tb_prc_bmid
+        WHERE  bm_id = #{bmInfo.bm_id}
+        LIMIT 1
+    </select>
+
+    <!-- BM 정보 등록 -->
+    <insert id="insertBmInfo" parameterType="BmInfo">
+        INSERT INTO tb_prc_bmid
+        ( bm_id
+        , bm_name
+        , binary_id
+        )
+        VALUES
+        ( #{bmInfo.biz_domain}
+        , #{bmInfo.bm_id}
+        , #{bmInfo.bm_name}
+        , #{bmInfo.binary_id}
+        )
+    </insert>
+
+    <!-- BM 정보 수정 -->
+    <update id="updateBmInfo" parameterType="BmInfo">
+        UPDATE tb_prc_bmid
+        SET    bm_name     = #{bmInfo.bm_name}
+             , bm_id        = #{bmInfo.bm_id}
+             , binary_id   = #{bmInfo.binary_id}
+        WHERE  bm_id = #{bmInfo.old_bm_id}
+    </update>
+
+    <!-- BM 정보 삭제 -->
+    <delete id="deleteBmInfo" parameterType="BmInfo">
+        DELETE FROM tb_prc_bmid
+        WHERE  bm_id = #{bmInfo.bm_id}
+    </delete>
+
+</mapper>

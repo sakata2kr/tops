@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.fwk.UserInfoMapper">
+
+    <!-- 사용자정보 조회 목록-->
+    <select id="selectUserInfoList" resultType="UserInfo">
+        SELECT gui.user_id
+             , gui.password
+             , gui.user_name
+             , gui.user_group_id
+             , gag.auth_group_name AS user_group_name
+             , gui.phone_no
+             , gui.email
+             , gui.alert_receive_yn
+             , DATE_FORMAT(gui.last_login_dt, '%Y/%m/%d %H:%i:%s') AS last_login_dt
+        FROM   tb_gui_user_info gui
+             , tb_gui_auth_group gag
+        WHERE  gag.auth_group_id = gui.user_group_id
+            <if test="search != null and search.searchOption == '01'">
+                AND   gui.user_name LIKE CONCAT('%', #{search.searchWord}, '%')
+            </if>
+            <if test="search != null and search.searchOption == '02'">
+                AND gui.user_id LIKE CONCAT('%', #{search.searchWord}, '%')
+            </if>
+        ORDER BY gui.user_name
+    </select>
+
+    <!-- 사용자정보 조회(단건) -->
+    <select id="selectUserInfo" resultType="UserInfo">
+        SELECT user_id
+             , user_name
+             , user_group_id
+             , phone_no
+             , email
+             , alert_receive_yn
+        FROM   tb_gui_user_info
+        WHERE  user_id =  #{userInfo.user_id}
+        LIMIT 1
+    </select>
+
+    <!-- 사용자정보 등록 -->
+    <insert id="insertUserInfo" parameterType="UserInfo">
+        INSERT INTO tb_gui_user_info
+        ( user_id
+        , user_group_id
+        , user_name
+        , password
+        , phone_no
+        , email
+        , alert_receive_yn
+        , last_login_dt
+        , audit_dtm
+        )
+        VALUES
+        ( #{userInfo.user_id, jdbcType=VARCHAR}
+        , #{userInfo.user_group_id, jdbcType=VARCHAR}
+        , #{userInfo.user_name, jdbcType=VARCHAR}
+        , #{userInfo.password, jdbcType=VARCHAR}
+        , REPLACE(#{userInfo.phone_no, jdbcType=VARCHAR}, '-', '')
+        , #{userInfo.email, jdbcType=VARCHAR}
+        , (CASE WHEN #{userInfo.alert_receive_yn} != 'Y' THEN 'N' ELSE 'Y' END )
+        , DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')
+        , NOW()
+        )
+    </insert>
+
+    <!-- 사용자정보 수정 -->
+    <update id="updateUserInfo" parameterType="UserInfo">
+        UPDATE tb_gui_user_info
+        SET    audit_dtm        = NOW()
+          <if test="userInfo.password != null and userInfo.password != ''">
+             , password         = #{userInfo.password}
+          </if>
+          <if test="userInfo.user_group_id != null and userInfo.user_group_id != ''">
+             , user_group_id    = #{userInfo.user_group_id}
+          </if>
+          <if test="userInfo.user_name != null and userInfo.user_name != ''">
+             , user_name        = #{userInfo.user_name}
+          </if>
+             , phone_no         = REPLACE(#{userInfo.phone_no, jdbcType=VARCHAR}, '-', '')
+             , email            = #{userInfo.email, jdbcType=VARCHAR}
+          <if test="userInfo.alert_receive_yn != null and userInfo.alert_receive_yn != ''">
+             , alert_receive_yn = #{userInfo.alert_receive_yn}
+          </if>
+        WHERE  user_id = #{userInfo.user_id}
+    </update>
+
+    <!-- 사용자정보 삭제 -->
+    <delete id="deleteUserInfo" parameterType="UserInfo">
+        DELETE FROM tb_gui_user_info
+        WHERE  user_id = #{userInfo.user_id}
+    </delete>
+
+    <!-- 사용자 접속일시 update -->
+    <update id="updateLatestLoginDt" parameterType="String">
+        UPDATE tb_gui_user_info
+        SET    last_login_dt = DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')
+        WHERE  user_id = #{userId}
+    </update>
+
+    <!-- 내 정보 수정 -->
+    <update id="updateMyInfo" parameterType="UserInfo">
+        UPDATE tb_gui_user_info
+        SET    audit_dtm        = NOW()
+          <if test="userInfo.password != null and userInfo.password != ''">
+             , password         = #{userInfo.password}
+          </if>
+          <if test="userInfo.user_name != null and userInfo.user_name != ''">
+             , user_name        = #{userInfo.user_name}
+          </if>
+             , phone_no         = REPLACE(#{userInfo.phone_no, jdbcType=VARCHAR}, '-', '')
+             , email            = #{userInfo.email, jdbcType=VARCHAR}
+          <if test="userInfo.alert_receive_yn != null and userInfo.alert_receive_yn != ''">
+             , alert_receive_yn = #{userInfo.alert_receive_yn}
+          </if>
+        WHERE user_id = #{userInfo.user_id}
+    </update>
+
+</mapper>

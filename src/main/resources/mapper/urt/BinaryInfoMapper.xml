@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.urt.BinaryInfoMapper">
+
+    <!-- BINARY 정보 조회 -->
+    <select id="selectBinaryInfoList" resultType="BinaryInfo">
+        SELECT binary_id
+             , binary_name
+             , description
+        FROM   tb_prc_binary
+        WHERE  binary_id NOT IN ('10001', '20001')
+    </select>
+
+    <!-- BINARY 정보 조회(전체) -->
+    <select id="selectBinaryInfoAllList" resultType="BinaryInfo">
+        SELECT   binary_id
+               , binary_name
+               , description
+        FROM     tb_prc_binary
+        ORDER BY binary_id
+    </select>
+
+    <select id="selectBinaryInfo" parameterType="String" resultType="BinaryInfo">
+        SELECT binary_id
+             , binary_name
+             , description
+        FROM   tb_prc_binary
+        WHERE  binary_id = #{binaryId}
+    </select>
+
+    <select id="selectBinaryLocationInfoList" parameterType="BinaryInfo" resultType="BinaryLocation">
+        SELECT psystem_id AS psystemId
+             , binary_id  AS binaryId
+             , binary_loc AS binaryLoc
+         FROM  tb_prc_binary_loc
+         WHERE binary_id = #{binary_id}
+    </select>
+
+    <!-- Binary정보 등록 -->
+    <insert id="insertBinaryInfo" parameterType="BinaryInfo">
+        INSERT INTO tb_prc_binary
+        ( binary_id
+        , binary_name
+        , description
+        )
+        VALUES
+        ( #{binaryInfo.binary_id}
+        , #{binaryInfo.binary_name}
+        , #{binaryInfo.description}
+        )
+    </insert>
+
+    <!-- Binary정보 수정 -->
+    <update id="updateBinaryInfo" parameterType="BinaryInfo">
+        UPDATE tb_prc_binary
+        SET    binary_name = #{binaryInfo.binary_name}
+             , description = #{binaryInfo.description}
+        WHERE  binary_id = #{binaryInfo.binary_id}
+    </update>
+
+    <!-- Binary정보 삭제 -->
+    <delete id="deleteBinaryInfo" parameterType="String">
+        DELETE tb_prc_binary
+        WHERE  binary_id = #{binaryId}
+    </delete>
+
+    <!-- Binary Location정보 등록 -->
+    <insert id="insertBinaryLocationInfo" parameterType="BinaryLocation">
+        INSERT INTO tb_prc_binary_loc
+        ( psystem_id
+        , binary_id
+        , binary_loc
+        )
+        VALUES
+        ( #{binaryLocationInfo.psystemId}
+        , #{binaryLocationInfo.binaryId}
+        , #{binaryLocationInfo.binaryLoc}
+        )
+    </insert>
+
+    <!-- Binary Location정보 삭제 -->
+    <delete id="deleteBinaryLocationInfo" parameterType="String">
+        DELETE FROM tb_prc_binary_loc
+        WHERE  binary_id = #{binaryId}
+    </delete>
+
+</mapper>

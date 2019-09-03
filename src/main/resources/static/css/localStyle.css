@@ -1,0 +1,191 @@
+.data_grid-E2E0{background: #26B268;color: #FFF !important;}
+.data_grid-E2E1 {background: #3187D5;color: #FFF !important;}
+.data_grid-E2E2 {background: #F28900; color: #FFF !important;}
+.data_grid-E2E3 {background: #d94185; color: #FFF !important;}
+.data_grid-E2E99 {background: #d94185; color: #FFF !important;}
+
+.nondata_grid-E2E0{background: #26B268;color: #FFF !important;}
+.nondata_grid-E2E1 {background: #3187D5;color: #FFF !important;}
+.nondata_grid-E2E2 {background: #F28900; color: #FFF !important;}
+.nondata_grid-E2E3 {background: #d94185; color: #FFF !important;}
+.nondata_grid-E2E99 {background: #d94185; color: #FFF !important;}
+
+.wire_grid-E2E0{background: #26B268;color: #FFF !important;}
+.wire_grid-E2E1 {background: #3187D5;color: #FFF !important;}
+.wire_grid-E2E2 {background: #F28900; color: #FFF !important;}
+.wire_grid-E2E3 {background: #d94185; color: #FFF !important;}
+.wire_grid-E2E99 {background: #d94185; color: #FFF !important;}
+
+.dataPS_grid-E2E0{background: #26B268;color: #FFF !important;}
+.dataPS_grid-E2E1 {background: #3187D5;color: #FFF !important;}
+.dataPS_grid-E2E2 {background: #F28900; color: #FFF !important;}
+.dataPS_grid-E2E3 {background: #d94185; color: #FFF !important;}
+.dataPS_grid-E2E99 {background: #d94185; color: #FFF !important;}
+
+.nonDataPS_grid-E2E0{background: #26B268;color: #FFF !important;}
+.nonDataPS_grid-E2E1 {background: #3187D5;color: #FFF !important;}
+.nonDataPS_grid-E2E2 {background: #F28900; color: #FFF !important;}
+.nonDataPS_grid-E2E3 {background: #d94185; color: #FFF !important;}
+.nonDataPS_grid-E2E99 {background: #d94185; color: #FFF !important;}
+
+.wirePS_grid-E2E0{background: #26B268;color: #FFF !important;}
+.wirePS_grid-E2E1 {background: #3187D5;color: #FFF !important;}
+.wirePS_grid-E2E2 {background: #F28900; color: #FFF !important;}
+.wirePS_grid-E2E3 {background: #d94185; color: #FFF !important;}
+.wirePS_grid-E2E99 {background: #d94185; color: #FFF !important;}
+
+.pl_grid-E2E0{background: #26B268;color: #FFF !important;}
+.pl_grid-E2E1 {background: #3187D5;color: #FFF !important;}
+.pl_grid-E2E2 {background: #F28900; color: #FFF !important;}
+.pl_grid-E2E3 {background: #d94185; color: #FFF !important;}
+.pl_grid-E2E99 {background: #d94185; color: #FFF !important;}
+
+
+.treeview li span.tree-useN{
+	/* background:url(../img/icon/icon_bul_TS01.png) no-repeat 2px 4px; */
+	color: #DFDFDF;
+	margin-left: 1px;
+	/* padding-left: 12px; */
+	display:inline-block; 
+}
+
+.treeview li span.tree-useY{
+	/* background:url(../img/icon/icon_bul_TS01.png) no-repeat 2px 4px; */
+	margin-left: 1px;
+	/* padding-left: 12px; */
+	display:inline-block; 
+}
+
+/* .treeview li span.tree-E2E0{
+	background:url(../img/icon/icon_bul_green.png) no-repeat 2px 4px;
+	margin-left: 1px;
+	padding-left: 12px;
+	display:inline-block; 
+}
+
+.treeview li span.tree-E2E1{
+	background:url(../img/icon/icon_bul_blue.png) no-repeat 2px 4px;
+	margin-left: 1px;
+	padding-left: 12px;
+	display:inline-block;
+}
+
+.treeview li span.tree-E2E2{
+	background:url(../img/icon/icon_bul_yellow.png) no-repeat 2px 4px;
+	margin-left: 1px;
+	padding-left: 12px;
+	display:inline-block;
+}
+
+.treeview li span.tree-E2E3{
+	background:url(../img/icon/icon_bul_red.png) no-repeat 2px 4px;
+	margin-left: 1px;
+	padding-left: 12px;
+	display:inline-block;
+}
+
+.treeview li span.tree-E2E99{
+	background:url(../img/icon/icon_bul_red.png) no-repeat 2px 4px;
+	margin-left: 1px;
+	padding-left: 12px;
+	display:inline-block;
+} */
+
+.treeview li span.tree-active-useN{
+	background:#DFDFDF; /*url(../img/icon/icon_bul_white.png) no-repeat 4px 5px !important; */
+	color:#FFF; 
+	border-radius:10px;
+	height:17px;
+	vertical-align:middle;
+	padding:1px 2px;
+}
+
+.treeview li span.tree-active-useY{
+	background:#e10505; /*url(../img/icon/icon_bul_white.png) no-repeat 4px 5px !important; */
+	color:#FFF; 
+	border-radius:10px;
+	height:17px;
+	vertical-align:middle;
+	padding:1px 2px;
+}
+
+/* .treeview li span.tree-active-E2E0{
+	background:#28be6f url(../img/icon/icon_bul_white.png) no-repeat 4px 5px !important;
+	color:#FFF; 
+	border-radius:10px;
+	height:17px;
+	vertical-align:middle;
+	padding:1px 17px;
+}
+.treeview li span.tree-active-E2E1{
+	background:#348fe2 url(../img/icon/icon_bul_white.png) no-repeat 4px 5px !important;
+	color:#FFF; 
+	border-radius:10px;
+	height:17px;
+	vertical-align:middle;
+	padding:1px 17px;
+}
+.treeview li span.tree-active-E2E2{
+	background:#ff9000 url(../img/icon/icon_bul_white.png) no-repeat 4px 5px !important;
+	color:#FFF;
+	border-radius:10px; 
+	height:17px;
+	vertical-align:middle;
+	padding:1px 17px;
+}
+.treeview li span.tree-active-E2E3{
+	background:#d94185 url(../img/icon/icon_bul_white.png) no-repeat 4px 5px !important;
+	color:#FFF; 
+	border-radius:10px;
+	height:17px;
+	vertical-align:middle;
+	padding:1px 17px;
+}
+
+.treeview li span.tree-active-E2E99{
+	background:#d94185 url(../img/icon/icon_bul_white.png) no-repeat 4px 5px !important;
+	color:#FFF; 
+	border-radius:10px;
+	height:17px;
+	vertical-align:middle;
+	padding:1px 17px;
+} */
+
+.inputWidth{width:120px;text-align:left;}
+
+/* 로딩*/
+#loading {
+    height: 100%;
+    left: 0;
+    position: fixed;
+    _position:absolute; 
+    top: 0;
+    width: 100%;
+    filter:alpha(opacity=50);
+    -moz-opacity:0.5;
+    opacity : 0.5;
+}
+
+.loading {
+    background-color: white;
+    z-index: 199;
+}
+
+#loading_img{
+    position:absolute; 
+    top:50%;
+    left:50%;
+    margin-top:-75px;   //  이미지크기
+    margin-left:-75px;  //  이미지크기
+    z-index: 200;
+}
+
+/* switchTypeStatus용 */
+.st_0 {background: #28be6f;color: #FFF;}
+.st_1 {background: #348fe2;color: #FFF;}
+.st_2 {background: #ff9000;color: #FFF;}
+.st_3 {background: #d94185;	color: #FFF;}
+
+strong.stop {color: #DFDFDF;}
+
+.showcase-container{padding:10px 0 10px 12px;}

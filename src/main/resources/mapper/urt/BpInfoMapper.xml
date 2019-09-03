@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.urt.BpInfoMapper">
+
+    <!-- BP 정보 조회(단건) -->
+    <select id="selectBpInfo" resultType="BpInfo">
+        SELECT bp_name
+             , auto_restart_cnt
+        FROM   tb_prc_bpid
+        WHERE  bp_id = #{bpInfo.bp_id}
+        LIMIT 1
+    </select>
+
+    <!-- BP 정보 등록 -->
+    <update id="insertBpInfo" parameterType="BpInfo">
+        INSERT INTO tb_prc_bpid
+        ( bp_id
+        , binary_id
+        , bp_name
+        , auto_restart_cnt
+        , extrnal_conn_yn
+        , extrnal_server_role_yn
+        , extrnal_server_id
+        , backup_file_yn
+        , backup_file_path 
+        )
+        (SELECT #{bpInfo.bp_id}                                                             AS bp_id
+              , (CASE WHEN #{bpInfo.ui_bp_group} LIKE 'W%' THEN '20001' ELSE '10001' END)   AS binary_id
+              , #{bpInfo.bp_name}                                                           AS bp_name
+              , #{bpInfo.auto_restart_cnt}                                                  AS auto_restart_cnt
+              , 'N'                                                                         AS extrnal_conn_yn
+              , 'N'                                                                         AS extrnal_server_role_yn
+              , NULL                                                                        AS extrnal_server_id
+              , 'N'                                                                         AS backup_file_yn
+              , NULL                                                                        AS backup_file_path
+         FROM   DUAL
+        )
+    </update>
+
+    <!-- BP 정보 수정 -->
+    <update id="updateBpInfo" parameterType="BpInfo">
+        UPDATE tb_prc_bpid
+        SET    bp_name          = #{bpInfo.bp_name}
+             , bp_id            = #{bpInfo.bp_id}
+             , auto_restart_cnt = #{bpInfo.auto_restart_cnt}
+        WHERE  bp_id = #{bpInfo.old_bp_id}
+    </update>
+
+    <!-- BP 정보 삭제 -->
+    <delete id="deleteBpInfo" parameterType="BpInfo">
+        DELETE FROM tb_prc_bpid
+        WHERE  bp_id       = #{bpInfo.bp_id}
+    </delete>
+
+</mapper>

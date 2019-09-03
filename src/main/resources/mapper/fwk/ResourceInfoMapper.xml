@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.fwk.ResourceInfoMapper">
+
+    <!-- 리소스 정보 조회 -->
+    <select id="selectResourceInfoList" parameterType="SearchParam" resultType="ResourceInfo">
+        SELECT resource_id
+             , resource_name
+             , resource_path
+             , sort_order
+        FROM   tb_gui_resource_info
+        <if test = "search != null">
+            <if test = "search.searchOption == '01'">
+                WHERE  resource_name LIKE CONCAT('%', #{search.searchWord}, '%')
+            </if>
+            <if test = "search.searchOption == '02'">
+                WHERE  resource_path LIKE CONCAT('%', #{search.searchWord}, '%')
+            </if>
+        </if>
+        ORDER BY resource_id
+
+    </select>
+
+    <!-- 리소스 정보 조회(단건) -->
+    <select id="selectResourceInfo" resultType="ResourceInfo">
+        SELECT resource_id
+             , resource_name
+             , resource_path
+             , sort_order
+        FROM   tb_gui_resource_info
+        WHERE  resource_id =  #{resource_id}
+        LIMIT 1
+    </select>
+
+    <!-- 리소스 정보 등록 -->
+    <update id="insertResourceInfo" parameterType="ResourceInfo">
+        INSERT INTO tb_gui_resource_info
+        ( SELECT CONCAT('R', (CAST(SUBSTR(MAX(resource_id), 2) AS integer) +1) ) AS resource_id
+               , #{resourceInfo.resource_name}                             AS resource_name
+               , #{resourceInfo.resource_path}                             AS resource_path
+               , 1                                                         AS sort_order
+          FROM   tb_gui_resource_info
+        )
+    </update>
+
+    <!-- 리소스 정보 수정 -->
+    <update id="updateResourceInfo" parameterType="ResourceInfo">
+        UPDATE tb_gui_resource_info
+        SET    resource_name = #{resourceInfo.resource_name}
+        WHERE  resource_id   = #{resourceInfo.old_resource_id}
+    </update>
+
+    <!-- 메뉴에 속한 리소스가 존재하는지 조회 -->
+    <select id="selectMenuResourceInfo" parameterType="ResourceInfo" resultType="Integer">
+        SELECT COUNT(1)
+        FROM   tb_gui_menu_info
+        WHERE  resource_id = #{resourceInfo.resource_id}
+    </select>
+
+    <!-- 리소스ID로 리소스접근정보 삭제 -->
+    <delete id="deleteResourceAccessInfoByResourceId" parameterType="ResourceInfo">
+        DELETE FROM tb_gui_resource_auth
+        WHERE  resource_id = #{resourceInfo.resource_id}
+    </delete>
+
+    <!-- 리소스 정보 삭제 -->
+    <delete id="deleteResourceInfo" parameterType="ResourceInfo">
+        DELETE FROM tb_gui_resource_info
+        WHERE  resource_id = #{resourceInfo.resource_id}
+    </delete>
+
+</mapper>

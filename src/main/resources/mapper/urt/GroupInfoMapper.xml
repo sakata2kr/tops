@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.urt.GroupInfoMapper">
+
+    <!-- 그룹정보 조회 -->
+    <select id="selectGroupInfoList" resultType="GroupInfo">
+        SELECT   pcg.group_id   AS group_id
+               , pcg.group_name AS group_name
+               , pcg.array_index
+        FROM     tb_prc_group pcg
+        ORDER BY pcg.array_index
+    </select>
+
+    <!-- 그룹정보 조회(단건) -->
+    <select id="selectGroupInfo" resultType="GroupInfo">
+        SELECT system_id
+             , system_group
+             , system_name
+             , sequence
+        FROM   tb_prc_system
+        WHERE  system_id LIKE CONCAT(#{groupInfo.system_id}, '%')
+        LIMIT 1
+    </select>
+
+    <!-- 그룹정보 등록 -->
+    <insert id="insertGroupInfo" parameterType="GroupInfo">
+        INSERT INTO tb_prc_group
+        ( group_id
+        , group_name
+        , array_index
+        )
+        VALUES
+        ( #{groupInfo.group_id}
+        , #{groupInfo.group_name}
+        , (SELECT MAX(array_index) +1 FROM tb_prc_group)
+        )
+    </insert>
+
+    <!-- 그룹정보 수정 -->
+    <update id="updateGroupInfo" parameterType="GroupInfo">
+        UPDATE tb_prc_group
+        SET    group_name    = #{groupInfo.group_name}
+        WHERE  group_id   LIKE CONCAT(#{groupInfo.group_id}, '%')
+    </update>
+
+    <!-- 그룹정보 삭제 -->
+    <delete id="deleteGroupInfo" parameterType="GroupInfo">
+        DELETE FROM tb_prc_group
+        WHERE  group_id   LIKE CONCAT(#{groupInfo.group_id}, '%')
+    </delete>
+
+    <!-- 그룹백업정책정보 조회 -->
+    <select id="selectGroupBackupPolicyInfoList" resultType="GroupBackupPolicyInfo">
+        SELECT system_id
+             , group_id
+             , primary_system_id
+             , backup_system_id
+        FROM   tb_hav_grp_backup_policy
+        WHERE  group_id = #{groupInfo.group_id}
+    </select>
+
+    <!-- 그룹ID에 대한 그룹백업정책정보 삭제 -->
+    <delete id="deleteGroupBackupPolicyInfo" parameterType="String">
+        DELETE FROM tb_hav_grp_backup_policy
+        WHERE  group_id = #{group_id}
+    </delete>
+
+    <!-- 그룹ID에 대한 그룹상태정보 삭제 -->
+    <delete id="deleteGroupStatusInfo" parameterType="String">
+        DELETE FROM tb_hav_grp_status
+        WHERE  group_id = #{group_id}
+    </delete>
+
+    <!-- 그룹백업정책정보 등록 -->
+    <insert id="insertGroupBackupPolicyInfo" parameterType="GroupBackupPolicyInfo">
+        INSERT INTO tb_hav_grp_backup_policy
+        ( system_id
+        , group_id
+        , primary_system_id
+        , backup_system_id
+        )
+        VALUES
+        ( #{groupBackupPolicyInfo.system_id}
+        , #{groupBackupPolicyInfo.group_id}
+        , #{groupBackupPolicyInfo.primary_system_id}
+        , #{groupBackupPolicyInfo.backup_system_id}
+        )
+    </insert>
+
+    <!-- 그룹상태정보 등록 -->
+    <insert id="insertGroupStatusInfo" parameterType="GroupBackupPolicyInfo">
+        INSERT INTO tb_hav_grp_status
+        ( system_id
+        , group_id
+        , op_system_id
+        )
+        VALUES
+        ( #{groupBackupPolicyInfo.system_id}
+        , #{groupBackupPolicyInfo.group_id}
+        , #{groupBackupPolicyInfo.primary_system_id}
+        )
+    </insert>
+
+    <!-- 그룹ID 에 대한 FLOW 정보 존재 여부 체크 -->
+    <select id="selectFlowExistByGroupId" parameterType="GroupInfo" resultType="Integer">
+        SELECT COUNT(1)
+        FROM   tb_flw_flow
+        WHERE  flow_id  = #{groupInfo.flow_id}
+        LIMIT 1
+    </select>
+
+    <!-- 그룹정보에 대한 switch type 존재 여부 체크 -->
+    <select id="selectGroupInfoSwitchTypeCnt" parameterType="GroupInfo" resultType="Integer">
+        SELECT 'TOBE' FROM DUAL
+    </select>
+
+    <!-- 그룹정보에 대한 단건조회 -->
+    <select id="selectGroupInfoSwitchType" parameterType="GroupInfo" resultType="GroupInfo">
+        SELECT group_id
+             , group_name
+             , array_index
+        FROM   tb_prc_group
+        WHERE  group_id = #{groupInfo.group_id}
+    </select>
+
+</mapper>

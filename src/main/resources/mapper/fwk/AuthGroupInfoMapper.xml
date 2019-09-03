@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.fwk.AuthGroupInfoMapper">
+
+    <!-- 권한그룹 정보 조회 -->
+    <select id="selectAuthGroupInfoList" resultType="AuthGroupInfo">
+        SELECT   auth_group_id
+               , auth_group_name
+               , operation_yn
+        FROM     tb_gui_auth_group
+        ORDER BY auth_group_id
+    </select>
+
+    <!-- 권한그룹 정보 조회(단건) -->
+    <select id="selectAuthGroupInfo" resultType="AuthGroupInfo">
+        SELECT auth_group_id
+             , auth_group_name
+             , operation_yn
+        FROM   tb_gui_auth_group
+        WHERE  auth_group_id =  #{auth_group_id}
+        LIMIT 1
+    </select>
+
+    <!-- 권한그룹 정보 등록 -->
+    <insert id="insertAuthGroupInfo" parameterType="AuthGroupInfo">
+        INSERT INTO tb_gui_auth_group
+        ( auth_group_id
+        , auth_group_name
+        , operation_yn
+        )
+        VALUES
+        ( #{authGroupInfo.auth_group_id}
+        , #{authGroupInfo.auth_group_name}
+        , #{authGroupInfo.operation_yn}
+        )
+    </insert>
+
+    <!-- 권한그룹 정보 수정 -->
+    <update id="updateAuthGroupInfo" parameterType="AuthGroupInfo">
+        UPDATE tb_gui_auth_group
+        SET    auth_group_name = #{authGroupInfo.auth_group_name}
+             , operation_yn    = #{authGroupInfo.operation_yn}
+        WHERE  auth_group_id   = #{authGroupInfo.auth_group_id}
+    </update>
+
+    <!-- 권한그룹 정보 삭제 -->
+    <delete id="deleteAuthGroupInfo" parameterType="AuthGroupInfo">
+        DELETE FROM tb_gui_auth_group
+        WHERE  auth_group_id = #{authGroupInfo.auth_group_id}
+    </delete>
+
+    <!-- 권한그룹 중복체크 -->
+    <select id="selectDupAuthGroup" parameterType="AuthGroupInfo" resultType="Integer">
+        SELECT COUNT(1)
+        FROM   tb_gui_auth_group
+        WHERE  auth_group_id = #{authGroupInfo.auth_group_id}
+    </select>
+
+    <!-- 권한그룹에 속한 사용자가 존재하는지 조회 -->
+    <select id="selectUserNumByAuthGroupId" parameterType="AuthGroupInfo" resultType="Integer">
+        SELECT 1
+        FROM   tb_gui_user_info
+        WHERE  user_group_id = #{authGroupInfo.auth_group_id}
+        LIMIT 1
+    </select>
+
+</mapper>

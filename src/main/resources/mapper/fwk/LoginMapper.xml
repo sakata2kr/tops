@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.fwk.LoginMapper">
+
+    <select id="getUserInfo" parameterType="String" resultType="UserInfo">
+            SELECT gui.user_id
+                 , gui.password
+                 , gui.user_name
+                 , gui.phone_no
+                 , gui.user_group_id
+                 , gui.alert_receive_yn
+                 , (CASE WHEN gui.user_group_id = 'ADMIN' THEN 'Y'
+                         ELSE gag.operation_yn
+                    END) AS operation_yn
+            FROM   tb_gui_user_info gui
+                   LEFT OUTER JOIN tb_gui_auth_group gag
+                   ON ( gag.auth_group_id = gui.user_group_id )
+            WHERE  gui.user_id  = #{user_id}
+    </select>
+
+    <delete id="deleteUserBookmark" parameterType="String">
+        DELETE FROM tb_gui_user_bookmark
+        WHERE  user_id = #{userId}
+    </delete>
+
+    <insert id="insertUserBookmark" parameterType="BookmarkInfo">
+        INSERT INTO tb_gui_user_bookmark
+        ( user_id
+        , menu_id
+        , screen_top
+        , screen_left
+        , screen_right
+        , screen_height
+        , screen_width
+        , screen_status
+        , update_dt
+        , create_dt
+        )
+        VALUES
+        ( #{bookmarkInfo.userId}
+        , #{bookmarkInfo.menuId}
+        , #{bookmarkInfo.screenTop}
+        , #{bookmarkInfo.screenLeft}
+        , #{bookmarkInfo.screenRight}
+        , #{bookmarkInfo.screenHeight}
+        , #{bookmarkInfo.screenWidth}
+        , #{bookmarkInfo.screenStatus}
+        , DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')
+        , DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')
+        )
+    </insert>
+
+    <select id="selectUserBookmark" parameterType="String" resultType="BookmarkInfo">
+        SELECT gub.user_id       AS userId
+             , gub.menu_id       AS menuId
+             , gub.screen_top    AS screenTop
+             , gub.screen_left   AS screenLeft
+             , gub.screen_right  AS screenRight
+             , gub.screen_height AS screenHeight
+             , gub.screen_width  AS screenWidth
+             , gub.screen_status AS screenStatus
+             , gri.resource_path AS resourcePath
+        FROM   tb_gui_user_bookmark gub
+             , tb_gui_menu_info     gmi
+             , tb_gui_resource_info gri
+        WHERE  gub.user_id     = #{userId}
+        AND    gmi.menu_id     = gub.menu_id
+        AND    gri.resource_id = gmi.resource_id
+    </select>
+
+</mapper>

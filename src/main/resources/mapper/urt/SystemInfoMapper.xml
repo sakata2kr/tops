@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.urt.SystemInfoMapper">
+
+    <!-- 시스템정보 조회 -->
+    <select id="selectSystemInfoList" resultType="SystemInfo">
+        SELECT system_id    AS system_id
+             , system_group AS system_group
+             ,(CASE WHEN system_group = '10' THEN 'GUIDING' ELSE 'APPLICATION' END)  AS system_group_name
+             , system_name
+             , sequence
+        FROM   tb_prc_system
+        <if test="systemInfo.system_groups != null">
+        WHERE system_group IN (
+            <foreach collection="systemInfo.system_groups" item="a" separator=",">#{a}</foreach>
+        )
+        </if>
+        ORDER BY system_id
+    </select>
+
+    <!-- 시스템정보 조회(단건) -->
+    <select id="selectSystemInfo" resultType="SystemInfo">
+        SELECT system_id    AS system_id
+             , system_group AS system_group
+             , system_name
+             , sequence
+        FROM   tb_prc_system
+        WHERE  system_id = #{systemInfo.system_id}
+        LIMIT 1
+    </select>
+
+    <!-- 시스템정보 등록 -->
+    <update id="insertSystemInfo" parameterType="SystemInfo">
+        INSERT INTO tb_prc_system
+        ( SELECT #{systemInfo.system_id}    AS system_id
+               , #{systemInfo.system_group} AS system_group
+               , #{systemInfo.system_name}   AS system_name
+               , MAX(sequence) +1            AS sequence
+          FROM tb_prc_system
+        )
+    </update>
+
+    <!-- 시스템정보 수정 -->
+    <update id="updateSystemInfo" parameterType="SystemInfo">
+        UPDATE tb_prc_system
+        SET    system_id    = #{systemInfo.system_id}
+             , system_group = #{systemInfo.system_group}
+             , system_name  = #{systemInfo.system_name}
+        WHERE  system_id    = #{systemInfo.old_system_id}
+    </update>
+
+    <!-- 시스템정보 삭제 -->
+    <delete id="deleteSystemInfo" parameterType="SystemInfo">
+        DELETE FROM tb_prc_system
+        WHERE  system_id = #{systemInfo.system_id}
+    </delete>
+
+    <!-- 백업정책대상시스템정보 조회 -->
+    <select id="selectBackupPolicySystemInfoList" resultType="SystemInfo">
+        SELECT system_id    AS system_id
+             , system_group AS system_group
+        FROM   tb_prc_system
+    </select>
+
+    <!-- LOGICAL GROUP 정보 조회 -->
+    <select id="selectLogicalGroupInfoList" resultType="SystemInfo">
+        SELECT   DISTINCT system_group AS system_group
+        FROM     tb_prc_system
+    </select>
+
+</mapper>

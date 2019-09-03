@@ -1,0 +1,63 @@
+/* 
+ *  jq grid style 재정의
+ *  Mokgoon
+ * 
+ */
+
+
+.ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default{
+	background: #43474e;
+	color: #FFF;
+}
+
+.ui-jqgrid tr.ui-row-ltr td{
+	text-align:center;	
+}
+
+.ui-state-hover,
+.ui-widget-content .ui-state-hover,
+.ui-widget-header .ui-state-hover,
+.ui-state-focus,
+.ui-widget-content .ui-state-focus,
+.ui-widget-header .ui-state-focus {
+	/*border: 1px solid #999999;*/
+	/*background: #dadada url("../img/jquery-ui/ui-bg_glass_75_dadada_1x400.png") 50% 50% repeat-x;*/
+	background: #f0f3f5;
+	font-weight: normal;
+	color: #333333;
+}
+
+.ui-jqgrid .ui-jqgrid-htable th{
+	height:32px;
+}
+
+.ui-widget-content{
+	border:1px solid #ccd0d4;
+}
+
+.ui-state-highlight, .ui-widget-content .ui-state-highlight, .ui-widget-header .ui-state-highlight{
+	background:#e8feff;
+	border-color:#ccd0d4;
+}
+
+/* 달력 스타일 재 정의 */
+.ui-datepicker-calendar > tbody > tr > td > a{
+		background: #e6e6e6 url("../img/jquery-ui/ui-bg_glass_75_e6e6e6_1x400.png") 50% 50% repeat-x !important;
+		color: #555555 !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

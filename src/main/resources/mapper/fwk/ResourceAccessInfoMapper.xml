@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.fwk.ResourceAccessInfoMapper">
+
+    <!-- 리소스 접근 정보 조회-->
+    <select id="selectResourceAccessInfoList" resultType="ResourceAccessInfo">
+        SELECT   DISTINCT
+                 gri.resource_id
+               , gri.resource_name
+               , (CASE WHEN UPPER(#{search.searchWord}) = 'ADMIN' THEN 'Y' ELSE COALESCE(gra.access_yn, 'N') END) AS access_yn
+        FROM     tb_gui_resource_info gri
+                 LEFT OUTER JOIN tb_gui_resource_auth gra
+                 ON ( gra.resource_id = gri.resource_id
+                  AND ( UPPER(#{search.searchWord}) = 'ADMIN'
+                     OR gra.auth_group_id = UPPER(#{search.searchWord})
+                      )
+                 )
+        ORDER BY gri.resource_id
+    </select>
+
+    <!-- 리소스 접근정보 등록 -->
+    <insert id="insertResourceAccessInfo" parameterType="ResourceAccessInfo">
+        INSERT INTO tb_gui_resource_auth
+        ( resource_id
+        , auth_group_id
+        , access_yn
+        )
+        VALUES
+        ( #{resourceAccessInfo.resource_id}
+        , #{resourceAccessInfo.auth_group_id}
+        , #{resourceAccessInfo.access_yn}
+        )
+    </insert>
+
+    <!-- 리소스 접근정보 수정 -->
+    <update id="updateResourceAccessInfo" parameterType="ResourceAccessInfo">
+        UPDATE tb_gui_resource_auth
+        SET    access_yn     = #{resourceAccessInfo.access_yn}
+        WHERE  #{resourceAccessInfo.auth_group_id} != 'ADMIN'
+        AND    resource_id   = #{resourceAccessInfo.resource_id}
+        AND    auth_group_id = #{resourceAccessInfo.auth_group_id}
+    </update>
+
+    <!-- 권한그룹ID로 리소스접근정보 삭제 -->
+    <delete id="deleteResourceAccessInfo" parameterType="String">
+        DELETE FROM tb_gui_resource_auth
+        WHERE  auth_group_id = #{auth_group_id}
+    </delete>
+
+    <!-- 사용자ID 소속 그룹의 리소스 접근 가능 여부 조회 -->
+    <select id="validUserResourceAccess" parameterType="String" resultType="Integer">
+        SELECT 1
+        FROM   tb_gui_resource_info gri
+             , tb_gui_resource_auth gra
+             , tb_gui_auth_group    gag
+             , tb_gui_user_info     gui
+        WHERE  gui.user_id       = #{userId}
+        AND    gui.user_group_id = gag.auth_group_id
+        AND    gag.auth_group_id = gra.auth_group_id
+        AND    gra.access_yn     = 'Y'
+        AND    gra.resource_id   = gri.resource_id
+        AND    gri.resource_path = #{uri}
+        LIMIT 1
+    </select>
+
+</mapper>

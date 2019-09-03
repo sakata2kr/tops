@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tops.mapper.fwk.DashBoardInfoMapper">
+
+    <!-- 메뉴 정보 조회 -->
+    <select id="selectDashBoardInfo" resultType="DashBoardInfo">
+            SELECT comp_id
+                 , comp_type
+                 , sub_comp_id
+                 , status
+                 , stat_value
+            FROM (
+                SELECT comp_id
+                     , comp_type
+                     , sub_comp_id
+                     , stat_value
+                     , status
+                FROM (
+                    SELECT rs.system_id                  AS comp_id
+                         , 'SERVER'                      AS comp_type
+                         , CAST(rs.rsc_type AS CHAR(99)) AS sub_comp_id
+                         , ROUND(rs.use_amt/1000, 0)     AS stat_value
+                         , (CASE WHEN hss.status = 'TROUBLE' THEN '3'
+                                 ELSE COALESCE(rs.rsc_status, '0')
+                            END)                         AS status
+                         , RANK()OVER (PARTITION BY rs.rsc_type, rs.system_id ORDER BY rs.update_dt DESC, rs.rsc_status DESC, rs.use_amt DESC, rs.target_name) AS rk
+                    FROM   tb_rsc_status rs
+                           LEFT OUTER JOIN tb_hav_system_status hss
+                           ON ( hss.system_id = rs.system_id
+                           )
+                    WHERE  rs.target_name NOT LIKE '/nas%'
+                    UNION ALL
+                    SELECT 'NAS'                          AS comp_id
+                         , 'NAS'                          AS comp_type
+                         , CAST(rs2.rsc_type AS CHAR(99)) AS sub_comp_id
+                         , ROUND(rs2.use_amt/1000, 0)     AS stat_value
+                         , rs2.rsc_status                 AS status
+                         , RANK()OVER (PARTITION BY system_id, rsc_type ORDER BY update_dt DESC, rsc_status DESC, use_amt DESC, target_name) AS rk
+                    FROM   tb_rsc_status rs2
+                    WHERE  target_name LIKE '/nas%'
+                ) sl
+                WHERE  rk = 1
+                UNION ALL
+                SELECT (CASE WHEN if_target = 'SDP' AND system_id LIKE '2%' THEN CONCAT('R_', if_target)
+                             ELSE CONCAT('S_', if_target)
+                         END)    AS comp_id
+                     , 'NE'      AS comp_type
+                     , (CASE WHEN if_target IN ('DCB', 'OCG', 'IVR') AND system_id  = '103' THEN '1'
+                             WHEN if_target IN ('DCB', 'OCG', 'IVR') AND system_id != '103' THEN '2'
+                             WHEN if_target IN ('CDS', 'SDP')        AND system_id  = '104' THEN '1'
+                             WHEN if_target IN ('CDS', 'SDP')        AND system_id != '104' AND system_id LIKE '1%' THEN '2'
+                             WHEN if_target IN ('CDS', 'SDP')        AND system_id  = '203' THEN '1'
+                             WHEN if_target IN ('CDS', 'SDP')        AND system_id != '203' AND system_id LIKE '2%' THEN '2'
+                             ELSE if_target
+                         END)    AS sub_comp_id
+                     , 0         AS stat_value
+                     , (CASE WHEN status != 'Y' THEN '3' ELSE '0' END) AS status
+                FROM tb_if_status
+                UNION ALL
+                SELECT ol.comp_id
+                     , 'DATABASE'                     AS comp_type
+                     , ol.sub_comp_id
+                     , 0                              AS stat_value
+                     , COALESCE(oe.status, ol.status) AS status
+                FROM (
+                    SELECT comp_id
+                         , sub_comp_id
+                         , status
+                    FROM (
+                        SELECT 'ALTIBASE'                               AS comp_id
+                             , CONCAT('IMDB_', SUBSTR(system_id, 3, 1)) AS sub_comp_id
+                             , (CASE WHEN alti_running != 'Y' THEN '3'
+                                     ELSE '0'
+                                END)                                    AS status
+                             , RANK()OVER (PARTITION BY system_id ORDER BY rep_name) AS rk
+                        FROM   tb_alti_repgap_status
+                        WHERE  system_id IN ('101', '102', '103', '104')
+                    ) al
+                    WHERE rk = 1
+                    UNION ALL
+                    SELECT 'ORACLE'  AS comp_id
+                         , 'NURTP_1' AS sub_comp_id
+                         , '0'       AS status
+                    UNION ALL
+                    SELECT 'ORACLE'  AS comp_id
+                         , 'NURTP_2' AS sub_comp_id
+                         , '0'       AS status
+                    UNION ALL
+                    SELECT 'ORACLE'  AS comp_id
+                         , 'NURTP_3' AS sub_comp_id
+                         , '0'       AS status
+                    UNION ALL
+                    SELECT 'ORACLE'  AS comp_id
+                         , 'NURTP_4' AS sub_comp_id
+                         , '0'       AS status
+                    ) ol
+                    LEFT OUTER JOIN (
+                        SELECT  (CASE WHEN INSTR(UPPER(message), 'ALTIBASE') != 0 THEN 'ALTIBASE'
+                                      ELSE 'ORACLE'
+                                 END)  AS comp_id
+                              , CONCAT((CASE WHEN INSTR(UPPER(message), 'ALTIBASE') != 0 THEN 'IMDB'
+                                     ELSE 'NURTP'
+                                END)
+                                , (CASE WHEN INSTR(message, '101') != 0 THEN '_1'
+                                      WHEN INSTR(message, '102') != 0 THEN '_2'
+                                      WHEN INSTR(message, '103') != 0 THEN '_3'
+                                      ELSE '_4'
+                                 END)
+                                )     AS sub_comp_id
+                              , '3'   AS status
+                              , RANK()OVER(ORDER BY event_timestamp DESC, event_id DESC) AS rk
+                        FROM  tb_hav_event_hist
+                        WHERE event_type = 'EVAG01'
+                        AND   bp_id      = 'MONAGT'
+                        AND   error_code = 'E99000'
+                        AND   event_timestamp BETWEEN DATE_FORMAT(NOW() -1/24/60, '%Y%m%d%H%i%s') AND DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')
+                    ) oe
+                    ON ( oe.rk = 1
+                     AND ol.comp_id = oe.comp_id
+                     AND ol.sub_comp_id = oe.sub_comp_id
+                       )
+                UNION ALL
+                SELECT 'ALTIBASE'   AS comp_id
+                     , 'DATABASE'   AS comp_type
+                     , CONCAT_WS('-','IMDB_GAP', SUBSTR(ars.system_id, 3, 1) 
+                       , (CASE WHEN SUBSTR(ars.rep_name, 7, 1) = SUBSTR(ars.system_id, 3, 1)
+                             THEN SUBSTR(ars.rep_name, 5, 1)
+                             ELSE SUBSTR(ars.rep_name, 7, 1)
+                          END )
+							  )            AS sub_comp_id
+                     , 0            AS stat_value
+                     , (CASE WHEN ars.rep_gap > cct.threshold_value THEN '2'
+                             WHEN ars.rep_gap > wct.threshold_value THEN '1'
+                             ELSE '0'
+                        END)         AS status
+                FROM tb_alti_repgap_status ars
+                     LEFT OUTER JOIN tb_cmn_threshold wct
+                     ON ( wct.threshold_type ='RGW001')
+                     LEFT OUTER JOIN tb_cmn_threshold cct
+                     ON ( cct.threshold_type ='RGC001')
+                WHERE ars.system_id IN ('101', '102')
+                OR  ( ars.system_id IN ('103', '104')
+                  AND ars.rep_name != 'REP_1_2'
+                    )
+            ) tl
+            ORDER BY comp_type
+                   , comp_id
+                   , sub_comp_id
+    </select>
+
+</mapper>
